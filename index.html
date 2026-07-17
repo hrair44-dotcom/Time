@@ -325,6 +325,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02);color:var(--text-hi);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="app">
@@ -1867,6 +1868,10 @@ const SECURE_ACCESS = {
   clientId: 'PASTE_GOOGLE_OAUTH_CLIENT_ID_HERE',
   backendUrl: 'PASTE_APPS_SCRIPT_WEB_APP_URL_HERE'
 };
+const SUPABASE_ACCESS = {
+  url: 'PASTE_SUPABASE_PROJECT_URL_HERE',
+  anonKey: 'PASTE_SUPABASE_ANON_KEY_HERE'
+};
 const RAWDATA_HEADERS = [
   '', 'รอบ', 'รหัส', 'คำนำ', 'ชื่อ', 'สกุล', 'ชื่อเล่น', 'Sec.', 'Dept.',
   'วันที่ลา', 'พักร้อน', 'ป่วย', 'กิจ', 'กิจ-ไม่ จ.', 'ขาดงาน', 'อื่นๆ',
@@ -1912,6 +1917,136 @@ function isSecureAccessConfigured(){
     SECURE_ACCESS.backendUrl &&
     !SECURE_ACCESS.clientId.includes('PASTE_') &&
     !SECURE_ACCESS.backendUrl.includes('PASTE_');
+}
+
+function isSupabaseConfigured(){
+  return SUPABASE_ACCESS.url &&
+    SUPABASE_ACCESS.anonKey &&
+    !SUPABASE_ACCESS.url.includes('PASTE_') &&
+    !SUPABASE_ACCESS.anonKey.includes('PASTE_');
+}
+
+function supabaseClient(){
+  if(!window.__SUPABASE_CLIENT__){
+    window.__SUPABASE_CLIENT__ = window.supabase.createClient(
+      SUPABASE_ACCESS.url,
+      SUPABASE_ACCESS.anonKey
+    );
+  }
+  return window.__SUPABASE_CLIENT__;
+}
+
+function normaliseSupabaseRows(rows){
+  return (rows || []).map(r => ({
+    rd: Number(r.rd) || 0,
+    code: String(r.code || ''),
+    nm: r.nm || String(r.code || ''),
+    full: r.full || r.nm || String(r.code || ''),
+    sec: r.sec || '-',
+    dept: r.dept || '-',
+    dt: r.dt || null,
+    mo: r.mo || (r.dt ? String(r.dt).slice(0, 7) : null),
+    v: Number(r.v) || 0,
+    si: Number(r.si) || 0,
+    p: Number(r.p) || 0,
+    pu: Number(r.pu) || 0,
+    ab: Number(r.ab) || 0,
+    ot: Number(r.ot) || 0,
+    lt: Number(r.lt) || 0
+  }));
+}
+
+async function loadSupabaseDashboard(session){
+  const io = window.__DATA_IO__;
+  const client = supabaseClient();
+  const email = session && session.user && session.user.email ? session.user.email : '';
+  setOverlay(true);
+  setSourceStatus('กำลังโหลดข้อมูลตามสิทธิ์จาก Supabase...');
+  try{
+    const accessResult = await client
+      .from('user_access')
+      .select('sec')
+      .order('sec', {ascending:true});
+    if(accessResult.error) throw accessResult.error;
+
+    const rawResult = await client
+      .from('rawdata')
+      .select('rd,code,nm,full,sec,dept,dt,mo,v,si,p,pu,ab,ot,lt')
+      .order('dt', {ascending:true});
+    if(rawResult.error) throw rawResult.error;
+
+    const empResult = await client
+      .from('employee_master')
+      .select('code', {count:'exact', head:true});
+    if(empResult.error) throw empResult.error;
+
+    const allowedSecs = (accessResult.data || []).map(r => r.sec).filter(Boolean);
+    window.__MASTER_EMPLOYEE_COUNT__ = Number(empResult.count) || 0;
+    io.applyRecords(normaliseSupabaseRows(rawResult.data), `Supabase (${allowedSecs.join(', ') || 'no access'})`, {
+      showRevert: false,
+      sourceKind: 'Supabase',
+      title: 'โหลดข้อมูลตามสิทธิ์สำเร็จ'
+    });
+    setAuthPanel(`<div class="chip src">Signed in: <b>${email}</b> • Sec.: <b>${allowedSecs.join(', ') || '-'}</b> <button class="reset-btn" id="supabaseSignOut" style="margin-left:8px;padding:5px 10px;">ออกจากระบบ</button></div>`);
+    const signOutBtn = document.getElementById('supabaseSignOut');
+    if(signOutBtn){
+      signOutBtn.addEventListener('click', async ()=>{
+        await client.auth.signOut();
+        location.reload();
+      });
+    }
+  } catch(err){
+    io.showToast('err', 'โหลดข้อมูลจาก Supabase ไม่สำเร็จ', err.message || String(err));
+    setSourceStatus(`ไม่สามารถโหลดข้อมูลจาก Supabase ได้: ${err.message || err}`);
+  } finally {
+    setOverlay(false);
+  }
+}
+
+function renderSupabaseLogin(){
+  setSourceStatus('กรุณาเข้าสู่ระบบด้วยอีเมลเพื่อโหลดข้อมูลตามสิทธิ์');
+  setAuthPanel(`
+    <div class="chip src" style="gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="supabaseEmail" type="email" placeholder="email@company.com" style="min-width:240px;background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:8px;color:var(--text-hi);padding:8px 10px;font-family:inherit;">
+      <button class="reset-btn" id="supabaseLoginBtn" style="padding:7px 12px;">ส่งลิงก์เข้าสู่ระบบ</button>
+      <span id="supabaseLoginMsg">Supabase Magic Link / OTP</span>
+    </div>
+  `);
+  const btn = document.getElementById('supabaseLoginBtn');
+  const input = document.getElementById('supabaseEmail');
+  const msg = document.getElementById('supabaseLoginMsg');
+  btn.addEventListener('click', async ()=>{
+    const email = (input.value || '').trim().toLowerCase();
+    if(!email){
+      msg.textContent = 'กรุณาใส่อีเมล';
+      return;
+    }
+    btn.disabled = true;
+    msg.textContent = 'กำลังส่งลิงก์...';
+    const {error} = await supabaseClient().auth.signInWithOtp({
+      email,
+      options: {emailRedirectTo: location.href.split('#')[0]}
+    });
+    btn.disabled = false;
+    msg.textContent = error ? (error.message || String(error)) : 'ส่งลิงก์แล้ว กรุณาเปิดอีเมลเพื่อเข้าสู่ระบบ';
+  });
+}
+
+async function startSupabaseAccess(){
+  try{
+    const client = supabaseClient();
+    const {data, error} = await client.auth.getSession();
+    if(error) throw error;
+    if(data && data.session){
+      await loadSupabaseDashboard(data.session);
+      return;
+    }
+    renderSupabaseLogin();
+  } catch(err){
+    const io = window.__DATA_IO__;
+    if(io) io.showToast('err', 'Supabase Login ไม่พร้อมใช้งาน', err.message || String(err));
+    setSourceStatus('Supabase Login ไม่พร้อมใช้งาน');
+  }
 }
 
 function waitForGoogleIdentity(){
@@ -2094,6 +2229,10 @@ function loadJsonpRows(){
 async function loadGoogleSheet(){
   const io = window.__DATA_IO__;
   if(!io) return;
+  if(isSupabaseConfigured()){
+    startSupabaseAccess();
+    return;
+  }
   if(isSecureAccessConfigured()){
     startSecureAccess();
     return;
