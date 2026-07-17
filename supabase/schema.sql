@@ -3,7 +3,7 @@ create table if not exists public.rawdata (
   rd integer,
   code text not null,
   nm text,
-  full text,
+  full_name text,
   sec text,
   dept text,
   dt date,

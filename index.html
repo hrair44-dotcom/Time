@@ -1941,7 +1941,7 @@ function normaliseSupabaseRows(rows){
     rd: Number(r.rd) || 0,
     code: String(r.code || ''),
     nm: r.nm || String(r.code || ''),
-    full: r.full || r.nm || String(r.code || ''),
+    full: r.full_name || r.nm || String(r.code || ''),
     sec: r.sec || '-',
     dept: r.dept || '-',
     dt: r.dt || null,
@@ -1971,7 +1971,7 @@ async function loadSupabaseDashboard(session){
 
     const rawResult = await client
       .from('rawdata')
-      .select('rd,code,nm,full,sec,dept,dt,mo,v,si,p,pu,ab,ot,lt')
+      .select('rd,code,nm,full_name,sec,dept,dt,mo,v,si,p,pu,ab,ot,lt')
       .order('dt', {ascending:true});
     if(rawResult.error) throw rawResult.error;
 

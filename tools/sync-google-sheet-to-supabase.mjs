@@ -176,7 +176,7 @@ function parseRawdata(rows) {
       rd: col.rd != null ? numSafe(row[col.rd]) : 0,
       code,
       nm: nm || code,
-      full,
+      full_name: full,
       sec: col.sec != null ? String(row[col.sec] ?? '').trim() : '-',
       dept: col.dept != null ? String(row[col.dept] ?? '').trim() : '-',
       dt,
