@@ -43,14 +43,14 @@ Free plan ที่ Supabase ระบุไว้มี 2 active projects, 500 
 ```js
 const SUPABASE_ACCESS = {
   url: 'PASTE_SUPABASE_PROJECT_URL_HERE',
-  anonKey: 'PASTE_SUPABASE_ANON_KEY_HERE'
+  anonKey: 'PASTE_SUPABASE_ANON_OR_PUBLISHABLE_KEY_HERE'
 };
 ```
 
 หาค่าได้จาก Supabase Dashboard > Project Settings > API:
 
 - Project URL
-- anon public key
+- anon public key หรือ publishable key
 
 ## 5. Sync ข้อมูล Google Sheet เข้า Supabase
 
