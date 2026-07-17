@@ -324,6 +324,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02);color:var(--text-hi);}
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="app">
@@ -418,6 +419,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02);color:var(--text-hi);}
       </div>
 
       <div class="active-chips" id="dataSourceChip"></div>
+      <div class="active-chips" id="authPanel" style="display:none;"></div>
       <div class="active-chips" id="activeChips"></div>
     </div>
 
@@ -1861,6 +1863,10 @@ const GOOGLE_SHEET_SOURCE = {
   employeeSheetName: 'Y',
   label: 'Google Sheets / Rawdata'
 };
+const SECURE_ACCESS = {
+  clientId: 'PASTE_GOOGLE_OAUTH_CLIENT_ID_HERE',
+  backendUrl: 'PASTE_APPS_SCRIPT_WEB_APP_URL_HERE'
+};
 const RAWDATA_HEADERS = [
   '', 'รอบ', 'รหัส', 'คำนำ', 'ชื่อ', 'สกุล', 'ชื่อเล่น', 'Sec.', 'Dept.',
   'วันที่ลา', 'พักร้อน', 'ป่วย', 'กิจ', 'กิจ-ไม่ จ.', 'ขาดงาน', 'อื่นๆ',
@@ -1892,6 +1898,119 @@ function setOverlay(show){
 function setSourceStatus(text){
   const el = document.getElementById('dataSourceChip');
   if(el) el.innerHTML = `<div class="chip src">${text}</div>`;
+}
+
+function setAuthPanel(html){
+  const el = document.getElementById('authPanel');
+  if(!el) return;
+  el.style.display = html ? 'flex' : 'none';
+  el.innerHTML = html || '';
+}
+
+function isSecureAccessConfigured(){
+  return SECURE_ACCESS.clientId &&
+    SECURE_ACCESS.backendUrl &&
+    !SECURE_ACCESS.clientId.includes('PASTE_') &&
+    !SECURE_ACCESS.backendUrl.includes('PASTE_');
+}
+
+function waitForGoogleIdentity(){
+  return new Promise((resolve, reject)=>{
+    const started = Date.now();
+    const check = ()=>{
+      if(window.google && google.accounts && google.accounts.id){
+        resolve();
+        return;
+      }
+      if(Date.now() - started > 10000){
+        reject(new Error('Google Sign-In library did not load'));
+        return;
+      }
+      setTimeout(check, 120);
+    };
+    check();
+  });
+}
+
+function loadSecureBackend(idToken){
+  return new Promise((resolve, reject)=>{
+    const cb = `__attendanceSecureCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    let timer;
+    const cleanup = ()=>{
+      clearTimeout(timer);
+      delete window[cb];
+      script.remove();
+    };
+
+    window[cb] = payload => {
+      cleanup();
+      if(!payload || payload.ok !== true){
+        reject(new Error(payload && payload.error ? payload.error : 'Secure backend rejected the request'));
+        return;
+      }
+      resolve(payload);
+    };
+
+    script.onerror = ()=>{
+      cleanup();
+      reject(new Error('Could not load secure backend'));
+    };
+    timer = setTimeout(()=>{
+      cleanup();
+      reject(new Error('Secure backend timed out'));
+    }, 20000);
+
+    const url = new URL(SECURE_ACCESS.backendUrl);
+    url.searchParams.set('callback', cb);
+    url.searchParams.set('idToken', idToken);
+    url.searchParams.set('cachebust', String(Date.now()));
+    script.src = url.toString();
+    document.head.appendChild(script);
+  });
+}
+
+async function handleSecureCredential(response){
+  const io = window.__DATA_IO__;
+  if(!io || !response || !response.credential) return;
+  setOverlay(true);
+  setSourceStatus('กำลังตรวจสิทธิ์และโหลดข้อมูลจาก secure backend...');
+  try{
+    const payload = await loadSecureBackend(response.credential);
+    window.__MASTER_EMPLOYEE_COUNT__ = Number(payload.employeeCount) || 0;
+    io.applyRecords(payload.rows || [], payload.sourceLabel || 'Secure backend', {
+      showRevert: false,
+      sourceKind: 'secure backend',
+      title: 'โหลดข้อมูลตามสิทธิ์สำเร็จ'
+    });
+    setAuthPanel(`<div class="chip src">Signed in: <b>${payload.email}</b> • Sec.: <b>${(payload.allowedSecs||[]).join(', ')}</b></div>`);
+  } catch(err){
+    io.showToast('err', 'โหลดข้อมูลตามสิทธิ์ไม่สำเร็จ', err.message || String(err));
+    setSourceStatus(`ไม่สามารถโหลดข้อมูลตามสิทธิ์ได้: ${err.message || err}`);
+  } finally {
+    setOverlay(false);
+  }
+}
+
+async function startSecureAccess(){
+  const io = window.__DATA_IO__;
+  setOverlay(false);
+  setSourceStatus('กรุณาเข้าสู่ระบบด้วย Google เพื่อโหลดข้อมูลตามสิทธิ์');
+  setAuthPanel('<div class="chip src"><span id="googleSignInButton"></span><span>ใช้ Google Login เพื่อดูข้อมูลที่ได้รับสิทธิ์</span></div>');
+  try{
+    await waitForGoogleIdentity();
+    google.accounts.id.initialize({
+      client_id: SECURE_ACCESS.clientId,
+      callback: handleSecureCredential
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('googleSignInButton'),
+      {theme:'outline', size:'medium', text:'signin_with', shape:'rectangular'}
+    );
+  } catch(err){
+    if(io) io.showToast('err', 'Google Login ไม่พร้อมใช้งาน', err.message || String(err));
+    setSourceStatus('Google Login ไม่พร้อมใช้งาน');
+  }
 }
 
 async function loadCsvRows(){
@@ -1975,6 +2094,10 @@ function loadJsonpRows(){
 async function loadGoogleSheet(){
   const io = window.__DATA_IO__;
   if(!io) return;
+  if(isSecureAccessConfigured()){
+    startSecureAccess();
+    return;
+  }
   setOverlay(true);
   setSourceStatus('กำลังโหลดข้อมูลจาก Google Sheets...');
   try{
