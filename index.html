@@ -1828,18 +1828,8 @@ function handleFile(file){
 }
 
 function boot(){
-  const uploadBtn = document.getElementById('uploadBtn');
-  const fileInput = document.getElementById('fileInput');
   const revertBtn = document.getElementById('revertBtn');
 
-  if(uploadBtn && fileInput){
-    uploadBtn.addEventListener('click', ()=> fileInput.click());
-    fileInput.addEventListener('change', e=>{
-      const file = e.target.files[0];
-      if(file) handleFile(file);
-      fileInput.value = '';
-    });
-  }
   revertBtn.addEventListener('click', ()=>{
     applyRecords(JSON.parse(JSON.stringify(ORIGINAL_DATA)), 'ข้อมูลเริ่มต้น (ไฟล์แนบแรก)');
     revertBtn.style.display = 'none';
