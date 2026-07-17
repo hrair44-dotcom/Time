@@ -414,10 +414,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02);color:var(--text-hi);}
 
         <button class="reset-btn" id="resetBtn">✕ ล้างตัวกรอง</button>
 
-        <button class="reset-btn" id="uploadBtn" style="border-color:var(--yellow);color:var(--yellow-soft);">
-          ⭱ อัปโหลดไฟล์ใหม่
-        </button>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
         <button class="reset-btn" id="revertBtn" style="display:none;">↺ ใช้ข้อมูลเริ่มต้น</button>
       </div>
 
@@ -1836,12 +1832,14 @@ function boot(){
   const fileInput = document.getElementById('fileInput');
   const revertBtn = document.getElementById('revertBtn');
 
-  uploadBtn.addEventListener('click', ()=> fileInput.click());
-  fileInput.addEventListener('change', e=>{
-    const file = e.target.files[0];
-    if(file) handleFile(file);
-    fileInput.value = '';
-  });
+  if(uploadBtn && fileInput){
+    uploadBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(file) handleFile(file);
+      fileInput.value = '';
+    });
+  }
   revertBtn.addEventListener('click', ()=>{
     applyRecords(JSON.parse(JSON.stringify(ORIGINAL_DATA)), 'ข้อมูลเริ่มต้น (ไฟล์แนบแรก)');
     revertBtn.style.display = 'none';
