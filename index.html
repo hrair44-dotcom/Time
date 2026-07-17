@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Attendance Intelligence — Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root{
+  --navy-950:#050D1C;
+  --navy-900:#0A1B33;
+  --navy-850:#0E2240;
+  --navy-800:#13294B;
+  --navy-700:#1B3760;
+  --navy-600:#26487D;
+  --line:#1F3A60;
+  --yellow:#FFC83D;
+  --yellow-soft:#FFE08A;
+  --yellow-dim:#7A6324;
+  --text-hi:#F4F8FD;
+  --text-mid:#A9BCD6;
+  --text-lo:#6E84A6;
+  --green:#3FD79A;
+  --red:#FF6E6E;
+  --blue-accent:#5BA8FF;
+  --purple:#B58CFF;
+  --radius:16px;
+  --shadow:0 8px 24px rgba(2,8,20,0.45);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Sarabun',sans-serif;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(255,200,61,0.07), transparent 40%),
+    radial-gradient(circle at 90% 0%, rgba(91,168,255,0.08), transparent 45%),
+    var(--navy-950);
+  color:var(--text-hi);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--navy-700);border-radius:8px;}
+
+.app{display:flex;min-height:100vh;}
+
+/* ============ SIDEBAR ============ */
+.sidebar{
+  width:248px;
+  flex:0 0 248px;
+  background:linear-gradient(180deg, var(--navy-900) 0%, var(--navy-950) 100%);
+  border-right:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  padding:24px 16px;
+  position:sticky;
+  top:0;
+  height:100vh;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:4px 8px 22px 8px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:20px;
+}
+.brand-mark{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--yellow) 0%, #C98F1B 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:var(--navy-950);font-size:16px;
+  box-shadow:0 4px 14px rgba(255,200,61,0.35);
+  flex:0 0 36px;
+}
+.brand-text .t1{font-size:14.5px;font-weight:700;color:var(--text-hi);line-height:1.2;}
+.brand-text .t2{font-size:11px;color:var(--text-lo);letter-spacing:0.04em;}
+
+.navlabel{
+  font-size:10.5px;color:var(--text-lo);text-transform:uppercase;
+  letter-spacing:0.12em;margin:18px 10px 8px;font-weight:600;
+}
+.navitem{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 12px;border-radius:11px;
+  color:var(--text-mid);font-size:14.5px;font-weight:500;
+  cursor:pointer;margin-bottom:3px;position:relative;
+  transition:background .15s, color .15s;
+  user-select:none;
+}
+.navitem .ic{width:18px;height:18px;flex:0 0 18px;display:flex;align-items:center;justify-content:center;}
+.navitem .ic svg{width:100%;height:100%;}
+.navitem:hover{background:rgba(255,255,255,0.04);color:var(--text-hi);}
+.navitem.active{
+  background:linear-gradient(90deg, rgba(255,200,61,0.16), rgba(255,200,61,0.02));
+  color:var(--yellow);
+  font-weight:600;
+}
+.navitem.active::before{
+  content:'';position:absolute;left:-16px;top:8px;bottom:8px;width:3px;
+  background:var(--yellow);border-radius:0 4px 4px 0;
+}
+.navitem.active .ic{color:var(--yellow);}
+
+.sidebar-foot{
+  margin-top:auto;padding:14px 12px;border-top:1px solid var(--line);
+  font-size:11px;color:var(--text-lo);line-height:1.5;
+}
+.sidebar-foot b{color:var(--text-mid);}
+
+/* ============ MAIN ============ */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(10,27,51,0.85);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding:16px 28px;
+}
+.topbar-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.topbar-head h1{font-size:19px;margin:0;font-weight:700;color:var(--text-hi);}
+.topbar-head .sub{font-size:12.5px;color:var(--text-lo);}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-group{position:relative;}
+.filter-btn{
+  display:flex;align-items:center;gap:8px;
+  background:var(--navy-850);border:1px solid var(--line);
+  color:var(--text-mid);padding:9px 13px;border-radius:10px;
+  font-size:13px;cursor:pointer;font-family:inherit;
+  transition:border-color .15s, color .15s;
+  min-width:128px;justify-content:space-between;
+}
+.filter-btn:hover{border-color:var(--navy-600);color:var(--text-hi);}
+.filter-btn.open{border-color:var(--yellow);color:var(--yellow);}
+.filter-btn .cnt{
+  background:var(--yellow);color:var(--navy-950);font-weight:700;
+  font-size:10.5px;border-radius:20px;padding:1px 7px;
+}
+.chev{width:9px;height:9px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);margin-top:-3px;flex:0 0 auto;}
+
+.dropdown-panel{
+  position:absolute;top:calc(100% + 8px);left:0;z-index:50;
+  background:var(--navy-850);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);
+  min-width:200px;max-height:280px;overflow-y:auto;
+  padding:8px;display:none;
+}
+.dropdown-panel.show{display:block;}
+.dd-opt{
+  display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;
+  cursor:pointer;font-size:13px;color:var(--text-mid);
+}
+.dd-opt:hover{background:rgba(255,255,255,0.05);color:var(--text-hi);}
+.dd-opt input{accent-color:var(--yellow);width:14px;height:14px;cursor:pointer;}
+.dd-opt.all{border-bottom:1px solid var(--line);margin-bottom:5px;padding-bottom:9px;font-weight:600;color:var(--text-hi);}
+
+.emp-search{
+  width:100%;border:none;background:var(--navy-800);color:var(--text-hi);
+  padding:8px 9px;border-radius:8px;font-size:13px;margin-bottom:6px;font-family:inherit;
+  outline:1px solid var(--line);
+}
+.emp-search:focus{outline:1px solid var(--yellow);}
+
+.month-range{display:flex;align-items:center;gap:7px;background:var(--navy-850);
+  border:1px solid var(--line);padding:7px 11px;border-radius:10px;}
+.month-range select{
+  background:transparent;border:none;color:var(--text-hi);font-family:inherit;
+  font-size:13px;cursor:pointer;outline:none;
+}
+.month-range select option{background:var(--navy-850);color:var(--text-hi);}
+.month-range .arrow{color:var(--text-lo);font-size:12px;}
+
+.reset-btn{
+  background:transparent;border:1px solid var(--line);color:var(--text-lo);
+  padding:9px 14px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit;
+  transition:all .15s;display:flex;align-items:center;gap:6px;
+}
+.reset-btn:hover{border-color:var(--red);color:var(--red);}
+
+.active-chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.chip{
+  font-size:11.5px;background:rgba(255,200,61,0.1);color:var(--yellow-soft);
+  border:1px solid rgba(255,200,61,0.25);padding:4px 10px;border-radius:20px;
+  display:flex;align-items:center;gap:6px;
+}
+.chip b{font-weight:700;color:var(--yellow);}
+
+/* ============ CONTENT ============ */
+.content{padding:24px 28px 60px;}
+.view{display:none;}
+.view.active{display:block;animation:fadein .35s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section-title{
+  display:flex;align-items:center;justify-content:space-between;margin:30px 0 14px;
+}
+.section-title h2{font-size:15px;margin:0;color:var(--text-hi);font-weight:700;letter-spacing:0.01em;}
+.section-title .tag{font-size:11.5px;color:var(--text-lo);}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;}
+.kpi-card{
+  background:linear-gradient(160deg, var(--navy-850), var(--navy-900));
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 18px 16px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.kpi-card::after{
+  content:'';position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,200,61,0.10), transparent 70%);
+}
+.kpi-card .label{font-size:11.5px;color:var(--text-lo);margin-bottom:8px;display:flex;align-items:center;gap:6px;font-weight:600;letter-spacing:.02em;}
+.kpi-card .value{font-size:26px;font-weight:800;color:var(--text-hi);line-height:1;font-family:'JetBrains Mono',monospace;}
+.kpi-card .value .unit{font-size:13px;color:var(--text-mid);font-weight:500;margin-left:4px;font-family:'Sarabun',sans-serif;}
+.kpi-card .delta{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:4px;color:var(--text-lo);}
+.kpi-card .delta.up{color:var(--red);}
+.kpi-card .delta.down{color:var(--green);}
+.kpi-card .bar-mini{height:4px;border-radius:3px;background:var(--navy-700);margin-top:12px;overflow:hidden;}
+.kpi-card .bar-mini i{display:block;height:100%;border-radius:3px;}
+
+.chart-grid{display:grid;grid-template-columns:1.1fr 1.4fr;gap:16px;align-items:stretch;}
+.chart-grid.thirds{grid-template-columns:1fr 1fr;}
+.panel{
+  background:linear-gradient(160deg, var(--navy-850), var(--navy-900));
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 20px 14px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;
+}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+.panel-head h3{margin:0;font-size:14px;color:var(--text-hi);font-weight:700;}
+.panel-head p{margin:3px 0 0;font-size:11.5px;color:var(--text-lo);}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-mid);}
+.legend-dot{width:9px;height:9px;border-radius:3px;flex:0 0 9px;}
+canvas{width:100%;display:block;}
+.canvas-wrap{position:relative;flex:1;}
+
+.tooltip{
+  position:fixed;pointer-events:none;z-index:200;
+  background:var(--navy-950);border:1px solid var(--yellow);
+  color:var(--text-hi);padding:9px 12px;border-radius:9px;
+  font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,0.5);
+  display:none;line-height:1.5;min-width:120px;
+}
+.tooltip .tt-title{font-weight:700;color:var(--yellow-soft);margin-bottom:3px;font-size:12px;}
+.tooltip .tt-row{display:flex;justify-content:space-between;gap:14px;}
+.tooltip .tt-row span:last-child{font-family:'JetBrains Mono',monospace;font-weight:600;}
+
+/* table */
+.table-wrap{
+  background:linear-gradient(160deg, var(--navy-850), var(--navy-900));
+  border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--shadow);
+}
+.table-toolbar{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap;}
+.table-toolbar input{
+  background:var(--navy-800);border:1px solid var(--line);color:var(--text-hi);
+  padding:9px 12px;border-radius:9px;font-size:13px;font-family:inherit;width:240px;outline:none;
+}
+.table-toolbar input:focus{border-color:var(--yellow);}
+table{width:100%;border-collapse:collapse;font-size:12.8px;}
+thead th{
+  text-align:left;padding:11px 16px;color:var(--text-lo);font-weight:600;
+  font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none;
+}
+thead th:hover{color:var(--yellow-soft);}
+thead th .sort-ic{font-size:9px;opacity:.5;margin-left:3px;}
+tbody td{padding:10px 16px;border-bottom:1px solid rgba(31,58,96,0.5);color:var(--text-mid);white-space:nowrap;}
+tbody tr:hover td{background:rgba(255,255,255,0.02);color:var(--text-hi);}
+.namecell{display:flex;align-items:center;gap:9px;}
+.avatar{
+  width:28px;height:28px;border-radius:50%;background:var(--navy-700);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  color:var(--yellow-soft);flex:0 0 28px;
+}
+.namecell .nm{color:var(--text-hi);font-weight:600;}
+.namecell .fl{font-size:11px;color:var(--text-lo);}
+.pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block;}
+.pill.s-ok{background:rgba(63,215,154,0.13);color:var(--green);}
+.pill.s-warn{background:rgba(255,200,61,0.13);color:var(--yellow);}
+.pill.s-bad{background:rgba(255,110,110,0.13);color:var(--red);}
+.numcell{font-family:'JetBrains Mono',monospace;color:var(--text-hi);}
+.table-foot{padding:12px 18px;font-size:11.5px;color:var(--text-lo);border-top:1px solid var(--line);}
+
+.empty-state{padding:60px 20px;text-align:center;color:var(--text-lo);}
+
+/* ---- data source chip ---- */
+.chip.src{background:rgba(91,168,255,0.10);color:var(--blue-accent);border-color:rgba(91,168,255,0.28);}
+.chip.src b{color:#8FC4FF;}
+
+/* ---- toast ---- */
+.toast-stack{position:fixed;top:18px;right:18px;z-index:500;display:flex;flex-direction:column;gap:10px;max-width:340px;}
+.toast{
+  background:var(--navy-850);border:1px solid var(--line);border-left:4px solid var(--blue-accent);
+  border-radius:10px;padding:13px 16px;box-shadow:var(--shadow);
+  font-size:13px;color:var(--text-hi);animation:toastin .25s ease;
+}
+.toast.ok{border-left-color:var(--green);}
+.toast.err{border-left-color:var(--red);}
+.toast .tt{font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+.toast .ds{color:var(--text-mid);font-size:12px;line-height:1.5;}
+@keyframes toastin{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:translateX(0);}}
+
+.upload-overlay{
+  position:fixed;inset:0;background:rgba(5,13,28,0.6);backdrop-filter:blur(3px);
+  z-index:400;display:none;align-items:center;justify-content:center;
+}
+.upload-overlay.show{display:flex;}
+.upload-spinner{
+  width:46px;height:46px;border-radius:50%;border:4px solid var(--navy-700);
+  border-top-color:var(--yellow);animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media(max-width:1200px){
+  .kpi-grid{grid-template-columns:repeat(3,1fr);}
+  .chart-grid{grid-template-columns:1fr;}
+}
+@media(max-width:760px){
+  .sidebar{display:none;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">69</div>
+      <div class="brand-text">
+        <div class="t1">Attendance Co.</div>
+        <div class="t2">INTELLIGENCE DASHBOARD</div>
+      </div>
+    </div>
+
+    <div class="navlabel">เมนูหลัก</div>
+    <div class="navitem active" data-view="overview">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+      ภาพรวม (Overview)
+    </div>
+    <div class="navitem" data-view="leave">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20" opacity="0"/><polygon points="12,3 19,8 17,18 7,18 5,8" /></svg></span>
+      วิเคราะห์การลา
+    </div>
+    <div class="navitem" data-view="late">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+      การมาสาย
+    </div>
+    <div class="navitem" data-view="employees">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="18" cy="8" r="2.6" opacity=".55"/><path d="M16 14.2c2.6.5 4.5 2.6 4.5 5.3" opacity=".55"/></svg></span>
+      รายชื่อพนักงาน
+    </div>
+
+    <div class="navlabel">ข้อมูล</div>
+    <div style="padding:0 12px;font-size:11.5px;color:var(--text-lo);line-height:1.9;">
+      Sheet: <b style="color:var(--text-mid)">Rawdata</b><br>
+      ช่วงเวลา: <b style="color:var(--text-mid)">ม.ค. – มิ.ย. 2026</b><br>
+      รอบบันทึก: <b style="color:var(--text-mid)">6 รอบ</b>
+    </div>
+
+    <div class="sidebar-foot">
+      อัปเดตล่าสุดจากไฟล์ <b>#69 Attendance Company</b><br>
+      แสดงผลแบบ Interactive — กรองข้อมูลได้จากด้านบน
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-head">
+        <div>
+          <h1 id="pageTitle">ภาพรวมการเข้างาน</h1>
+          <div class="sub" id="pageSub">สรุปข้อมูลการลาและการมาสายของพนักงานทั้งหมด</div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group" id="fg-round">
+          <button class="filter-btn" data-dd="dd-round">
+            <span>รอบ (Round)</span>
+            <span class="cnt" id="cnt-round">6</span>
+          </button>
+          <div class="dropdown-panel" id="dd-round"></div>
+        </div>
+
+        <div class="filter-group" id="fg-sec">
+          <button class="filter-btn" data-dd="dd-sec">
+            <span>แผนก (Sec.)</span>
+            <span class="cnt" id="cnt-sec">16</span>
+          </button>
+          <div class="dropdown-panel" id="dd-sec"></div>
+        </div>
+
+        <div class="filter-group" id="fg-emp">
+          <button class="filter-btn" data-dd="dd-emp">
+            <span id="emp-label">พนักงาน: ทั้งหมด</span>
+            <span class="chev"></span>
+          </button>
+          <div class="dropdown-panel" id="dd-emp" style="min-width:240px;">
+            <input class="emp-search" id="empSearch" placeholder="ค้นหาชื่อ / ชื่อเล่น...">
+            <div id="empOptList"></div>
+          </div>
+        </div>
+
+        <div class="month-range">
+          <span style="font-size:12px;color:var(--text-lo);">เดือน</span>
+          <select id="monthFrom"></select>
+          <span class="arrow">→</span>
+          <select id="monthTo"></select>
+        </div>
+
+        <button class="reset-btn" id="resetBtn">✕ ล้างตัวกรอง</button>
+
+        <button class="reset-btn" id="uploadBtn" style="border-color:var(--yellow);color:var(--yellow-soft);">
+          ⭱ อัปโหลดไฟล์ใหม่
+        </button>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+        <button class="reset-btn" id="revertBtn" style="display:none;">↺ ใช้ข้อมูลเริ่มต้น</button>
+      </div>
+
+      <div class="active-chips" id="dataSourceChip"></div>
+      <div class="active-chips" id="activeChips"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ OVERVIEW ============ -->
+      <div class="view active" id="view-overview">
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="section-title">
+          <h2>สัดส่วนวันลารวม &amp; แนวโน้มรายเดือน</h2>
+          <span class="tag">อัปเดตตามตัวกรองด้านบน</span>
+        </div>
+        <div class="chart-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>สัดส่วนประเภทการลา</h3><p>Donut Chart — เทียบสัดส่วนวันลาทุกประเภท</p></div>
+            </div>
+            <div class="canvas-wrap" style="height:300px;"><canvas id="chartDonut"></canvas></div>
+            <div class="legend" id="legendDonut"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>แนวโน้มวันลา &amp; การมาสายรายเดือน</h3><p>Bar = วันลารวม (วัน) &nbsp;•&nbsp; Line = จำนวนครั้งมาสาย</p></div>
+            </div>
+            <div class="canvas-wrap" style="height:300px;"><canvas id="chartComboTrend"></canvas></div>
+            <div class="legend" id="legendCombo"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ LEAVE ANALYSIS ============ -->
+      <div class="view" id="view-leave">
+        <div class="section-title">
+          <h2>เปรียบเทียบพฤติกรรมการลา</h2>
+          <span class="tag">เทียบกับค่าเฉลี่ยทั้งบริษัท</span>
+        </div>
+        <div class="chart-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>คะแนนเฉลี่ยรายประเภทการลา</h3><p>Radar Chart — ค่าเฉลี่ยวันลาต่อคน (ตัวกรอง vs ทั้งบริษัท)</p></div>
+            </div>
+            <div class="canvas-wrap" style="height:340px;"><canvas id="chartRadar"></canvas></div>
+            <div class="legend" id="legendRadar"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>สัดส่วนวันลารายเดือน แยกตามประเภท</h3><p>Stacked Bar Chart — หน่วย: วัน</p></div>
+            </div>
+            <div class="canvas-wrap" style="height:340px;"><canvas id="chartStacked"></canvas></div>
+            <div class="legend" id="legendStacked"></div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <h2>วันลารวมแยกตามแผนก (Sec.)</h2>
+          <span class="tag">Top แผนกที่มีวันลาสูงสุด</span>
+        </div>
+        <div class="chart-grid thirds">
+          <div class="panel">
+            <div class="panel-head"><div><h3>วันลารวมตามแผนก</h3><p>Bar Chart</p></div></div>
+            <div class="canvas-wrap" style="height:280px;"><canvas id="chartSecBar"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>สัดส่วนวันลา: มีใบรับรองแพทย์ vs ลากิจ vs พักร้อน</h3><p>Pie Chart</p></div></div>
+            <div class="canvas-wrap" style="height:280px;"><canvas id="chartPie2"></canvas></div>
+            <div class="legend" id="legendPie2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ LATE ANALYSIS ============ -->
+      <div class="view" id="view-late">
+        <div class="kpi-grid" id="kpiGridLate" style="grid-template-columns:repeat(4,1fr);margin-bottom:6px;"></div>
+
+        <div class="section-title">
+          <h2>แนวโน้มการมาสาย</h2>
+          <span class="tag">รายเดือน</span>
+        </div>
+        <div class="chart-grid">
+          <div class="panel">
+            <div class="panel-head"><div><h3>จำนวนครั้ง &amp; นาทีสายรวมต่อเดือน</h3><p>Bar = จำนวนครั้ง &nbsp;•&nbsp; Line = นาทีสายรวม</p></div></div>
+            <div class="canvas-wrap" style="height:300px;"><canvas id="chartLateTrend"></canvas></div>
+            <div class="legend" id="legendLateTrend"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>10 อันดับพนักงานมาสายสูงสุด</h3><p>Bar Chart — รวมนาทีสาย</p></div></div>
+            <div class="canvas-wrap" style="height:300px;"><canvas id="chartTopLate"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ EMPLOYEES ============ -->
+      <div class="view" id="view-employees">
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div style="font-size:13px;color:var(--text-mid);font-weight:600;">รายชื่อพนักงาน <span id="empTableCount" style="color:var(--yellow-soft);"></span></div>
+            <input id="tableSearch" placeholder="ค้นหาชื่อ, รหัส, แผนก...">
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th data-key="full">พนักงาน</th>
+                  <th data-key="sec">Sec.</th>
+                  <th data-key="dept">Dept.</th>
+                  <th data-key="vac">พักร้อน</th>
+                  <th data-key="sick">ป่วย</th>
+                  <th data-key="pers">กิจ</th>
+                  <th data-key="abs">ขาดงาน</th>
+                  <th data-key="totalLeave">รวมวันลา</th>
+                  <th data-key="lateCount">มาสาย (ครั้ง)</th>
+                  <th data-key="lateMin">นาทีสายรวม</th>
+                  <th data-key="status">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="empTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-foot" id="tableFoot"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+const DATA = [];
+const EMP = [];
+
+/* ============================================================
+   ATTENDANCE DASHBOARD — APP LOGIC
+   ============================================================ */
+(function(){
+"use strict";
+
+const LEAVE_TYPES = [
+  {key:'v',  label:'พักร้อน',     color:'#5BA8FF'},
+  {key:'si', label:'ป่วย',        color:'#FF6E6E'},
+  {key:'p',  label:'กิจ',         color:'#FFC83D'},
+  {key:'pu', label:'กิจ-ไม่จ่าย', color:'#B58CFF'},
+  {key:'ab', label:'ขาดงาน',      color:'#FF3D7F'},
+  {key:'ot', label:'อื่นๆ',       color:'#3FD79A'}
+];
+const LT_BY_KEY = Object.fromEntries(LEAVE_TYPES.map(t=>[t.key,t]));
+const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function monthLabel(m){
+  const parts = m.split('-');
+  const y = Number(parts[0]), mm = Number(parts[1]);
+  const beYear = y+543;
+  return THAI_MONTHS[mm-1] + ' ' + String(beYear).slice(-2);
+}
+
+/* META holds the derived "universe" of filter options for whatever is
+   currently loaded into DATA / EMP. Recomputed every time data changes. */
+const META = { months: [], rounds: [], secs: [] };
+function recomputeMeta(){
+  META.months = Array.from(new Set(DATA.map(d=>d.mo).filter(Boolean))).sort();
+  META.rounds = Array.from(new Set(DATA.map(d=>d.rd).filter(v=>v!=null))).sort((a,b)=>a-b);
+  META.secs = Array.from(new Set(DATA.map(d=>d.sec).filter(s=>s))).sort();
+}
+recomputeMeta();
+
+/* ---------------- STATE ---------------- */
+const state = {
+  rounds: new Set(META.rounds),
+  secs: new Set(META.secs),
+  emp: null, // code or null = all
+  monthFrom: META.months[0],
+  monthTo: META.months[META.months.length-1],
+  view: 'overview',
+  sortKey: 'totalLeave',
+  sortDir: -1,
+  tableQuery: ''
+};
+
+/* ---------------- DOM HELPERS ---------------- */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+function fmt1(n){ return (Math.round(n*10)/10).toLocaleString('en-US'); }
+function fmt0(n){ return Math.round(n).toLocaleString('en-US'); }
+
+/* ---------------- FILTERING ---------------- */
+function monthInRange(m){
+  return META.months.indexOf(m) >= META.months.indexOf(state.monthFrom) &&
+         META.months.indexOf(m) <= META.months.indexOf(state.monthTo);
+}
+function getFiltered(){
+  return DATA.filter(r =>
+    state.rounds.has(r.rd) &&
+    state.secs.has(r.sec) &&
+    (state.emp===null || r.code===state.emp) &&
+    monthInRange(r.mo)
+  );
+}
+
+/* ---------------- AGGREGATION ---------------- */
+function sumType(rows,key){ return rows.reduce((a,r)=>a+(r[key]||0),0); }
+function totalLeaveDays(rows){
+  return LEAVE_TYPES.reduce((a,t)=>a+sumType(rows,t.key),0);
+}
+function lateRows(rows){ return rows.filter(r=>r.lt>0); }
+
+function employeeCountForKpi(){
+  const masterCount = Number(window.__MASTER_EMPLOYEE_COUNT__);
+  if(Number.isFinite(masterCount) && masterCount > 0) return masterCount;
+  return 0;
+}
+
+function computeKPIs(rows){
+  const employees = employeeCountForKpi();
+  const leaveDays = totalLeaveDays(rows);
+  const lr = lateRows(rows);
+  const lateMinutes = sumType(rows,'lt');
+  const lateCount = lr.length;
+  const avgLate = lateCount ? lateMinutes/lateCount : 0;
+  const onTimeRate = rows.length ? (1 - lateCount/rows.length)*100 : 100;
+  return {
+    employees,
+    leaveDays, lateCount, lateMinutes, avgLate, onTimeRate,
+    records: rows.length
+  };
+}
+
+/* ============================================================
+   FILTER UI — Dropdowns
+   ============================================================ */
+function buildCheckDropdown(containerId, allItems, stateSet, labelFn, onChange, btnId, countId){
+  const el = $('#'+containerId);
+  function render(){
+    let html = `<div class="dd-opt all" data-all="1"><input type="checkbox" ${stateSet.size===allItems.length?'checked':''}/> เลือกทั้งหมด</div>`;
+    allItems.forEach(item=>{
+      html += `<div class="dd-opt" data-item="${item}"><input type="checkbox" ${stateSet.has(item)?'checked':''}/> ${labelFn(item)}</div>`;
+    });
+    el.innerHTML = html;
+    el.querySelectorAll('.dd-opt').forEach(opt=>{
+      opt.addEventListener('click', e=>{
+        e.stopPropagation();
+        if(opt.dataset.all){
+          if(stateSet.size===allItems.length){ stateSet.clear(); }
+          else { allItems.forEach(i=>stateSet.add(i)); }
+        } else {
+          const v = opt.dataset.item;
+          // attempt numeric match for rounds
+          const match = allItems.find(i => String(i)===v);
+          if(stateSet.has(match)) stateSet.delete(match); else stateSet.add(match);
+        }
+        render();
+        $('#'+countId).textContent = stateSet.size===allItems.length ? allItems.length : stateSet.size;
+        refreshAll();
+      });
+    });
+  }
+  render();
+}
+
+function setupMonthSelects(){
+  const from = $('#monthFrom'), to = $('#monthTo');
+  from.innerHTML = ''; to.innerHTML = '';
+  META.months.forEach(m=>{
+    from.innerHTML += `<option value="${m}">${monthLabel(m)}</option>`;
+    to.innerHTML += `<option value="${m}">${monthLabel(m)}</option>`;
+  });
+  from.value = state.monthFrom;
+  to.value = state.monthTo;
+  from.onchange = ()=>{
+    state.monthFrom = from.value;
+    if(META.months.indexOf(state.monthFrom) > META.months.indexOf(state.monthTo)){
+      state.monthTo = state.monthFrom; to.value = state.monthTo;
+    }
+    refreshAll();
+  };
+  to.onchange = ()=>{
+    state.monthTo = to.value;
+    if(META.months.indexOf(state.monthTo) < META.months.indexOf(state.monthFrom)){
+      state.monthFrom = state.monthTo; from.value = state.monthFrom;
+    }
+    refreshAll();
+  };
+}
+
+function setupEmpDropdown(){
+  const listEl = $('#empOptList');
+  function render(query){
+    const q = (query||'').trim().toLowerCase();
+    let items = EMP.filter(e => !q ||
+      e.nm.toLowerCase().includes(q) ||
+      e.full.toLowerCase().includes(q) ||
+      String(e.code).includes(q) ||
+      (e.sec||'').toLowerCase().includes(q)
+    );
+    let html = `<div class="dd-opt all" data-emp="null" style="border-bottom:1px solid var(--line);margin-bottom:5px;padding-bottom:9px;">
+      <input type="radio" name="empradio" ${state.emp===null?'checked':''}/> พนักงานทั้งหมด</div>`;
+    items.slice(0,200).forEach(e=>{
+      html += `<div class="dd-opt" data-emp="${e.code}"><input type="radio" name="empradio" ${state.emp===e.code?'checked':''}/> ${e.nm} <span style="color:var(--text-lo);font-size:11px;">(${e.sec})</span></div>`;
+    });
+    listEl.innerHTML = html;
+    listEl.querySelectorAll('.dd-opt').forEach(opt=>{
+      opt.addEventListener('click', e=>{
+        e.stopPropagation();
+        const v = opt.dataset.emp;
+        state.emp = v==='null' ? null : Number(v);
+        const lbl = state.emp===null ? 'พนักงาน: ทั้งหมด' : 'พนักงาน: '+EMP.find(x=>x.code===state.emp).nm;
+        $('#emp-label').textContent = lbl;
+        closeAllDropdowns();
+        refreshAll();
+      });
+    });
+  }
+  render('');
+  $('#empSearch').addEventListener('input', e=> render(e.target.value));
+  $('#empSearch').addEventListener('click', e=>e.stopPropagation());
+}
+
+function closeAllDropdowns(){
+  $$('.dropdown-panel').forEach(p=>p.classList.remove('show'));
+  $$('.filter-btn').forEach(b=>b.classList.remove('open'));
+}
+function setupDropdownToggles(){
+  $$('.filter-btn[data-dd]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const panel = $('#'+btn.dataset.dd);
+      const isOpen = panel.classList.contains('show');
+      closeAllDropdowns();
+      if(!isOpen){ panel.classList.add('show'); btn.classList.add('open'); }
+    });
+  });
+  document.addEventListener('click', closeAllDropdowns);
+}
+
+function updateChips(){
+  const chips = [];
+  if(state.rounds.size < META.rounds.length) chips.push(`รอบ: <b>${[...state.rounds].sort((a,b)=>a-b).join(', ')}</b>`);
+  if(state.secs.size < META.secs.length) chips.push(`Sec.: <b>${[...state.secs].join(', ')}</b>`);
+  if(state.emp!==null) chips.push(`พนักงาน: <b>${EMP.find(e=>e.code===state.emp).nm}</b>`);
+  if(state.monthFrom!==META.months[0] || state.monthTo!==META.months[META.months.length-1])
+    chips.push(`เดือน: <b>${monthLabel(state.monthFrom)} – ${monthLabel(state.monthTo)}</b>`);
+  const el = $('#activeChips');
+  if(!chips.length){ el.innerHTML=''; return; }
+  el.innerHTML = chips.map(c=>`<div class="chip">${c}</div>`).join('');
+}
+
+function setupReset(){
+  $('#resetBtn').addEventListener('click', ()=>{
+    state.rounds = new Set(META.rounds);
+    state.secs = new Set(META.secs);
+    state.emp = null;
+    state.monthFrom = META.months[0];
+    state.monthTo = META.months[META.months.length-1];
+    $('#monthFrom').value = state.monthFrom;
+    $('#monthTo').value = state.monthTo;
+    $('#cnt-round').textContent = META.rounds.length;
+    $('#cnt-sec').textContent = META.secs.length;
+    $('#emp-label').textContent = 'พนักงาน: ทั้งหมด';
+    buildCheckDropdown('dd-round', META.rounds, state.rounds, r=>'รอบ '+r, null, 'btn-round','cnt-round');
+    buildCheckDropdown('dd-sec', META.secs, state.secs, s=>s, null, 'btn-sec','cnt-sec');
+    setupEmpDropdown();
+    refreshAll();
+  });
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const VIEW_META = {
+  overview:{title:'ภาพรวมการเข้างาน', sub:'สรุปข้อมูลการลาและการมาสายของพนักงานทั้งหมด'},
+  leave:{title:'วิเคราะห์การลา', sub:'เปรียบเทียบพฤติกรรมการลาระหว่างประเภทและแผนก'},
+  late:{title:'การมาสาย', sub:'แนวโน้มและอันดับการมาสายของพนักงาน'},
+  employees:{title:'รายชื่อพนักงาน', sub:'ตารางสรุปรายบุคคล ค้นหาและจัดเรียงได้'}
+};
+function setupNav(){
+  $$('.navitem').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      $$('.navitem').forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
+      const v = item.dataset.view;
+      state.view = v;
+      $$('.view').forEach(s=>s.classList.remove('active'));
+      $('#view-'+v).classList.add('active');
+      $('#pageTitle').textContent = VIEW_META[v].title;
+      $('#pageSub').textContent = VIEW_META[v].sub;
+      renderView(v);
+    });
+  });
+}
+
+/* ============================================================
+   TOOLTIP
+   ============================================================ */
+const tooltip = $('#tooltip');
+function showTooltip(x,y,title,rows){
+  tooltip.innerHTML = `<div class="tt-title">${title}</div>` +
+    rows.map(r=>`<div class="tt-row"><span style="color:${r.color||'var(--text-mid)'}">${r.label}</span><span>${r.value}</span></div>`).join('');
+  tooltip.style.display='block';
+  let left = x+14, top = y+14;
+  tooltip.style.left = left+'px';
+  tooltip.style.top = top+'px';
+  // keep on screen
+  requestAnimationFrame(()=>{
+    const rect = tooltip.getBoundingClientRect();
+    if(rect.right > window.innerWidth-10) tooltip.style.left = (x-rect.width-14)+'px';
+    if(rect.bottom > window.innerHeight-10) tooltip.style.top = (y-rect.height-14)+'px';
+  });
+}
+function hideTooltip(){ tooltip.style.display='none'; }
+
+window.__APP_STATE__ = state;
+window.__APP_HELPERS__ = {
+  $, $$, fmt1, fmt0, LEAVE_TYPES, LT_BY_KEY, monthLabel,
+  get ALL_MONTHS(){ return META.months; },
+  get ALL_ROUNDS(){ return META.rounds; },
+  get ALL_SECS(){ return META.secs; },
+  getFiltered, sumType, totalLeaveDays, lateRows, computeKPIs, showTooltip, hideTooltip
+};
+
+/* expose init pieces for chart file */
+window.__INIT_FILTERS__ = function(){
+  buildCheckDropdown('dd-round', META.rounds, state.rounds, r=>'รอบ '+r, null, 'btn-round','cnt-round');
+  buildCheckDropdown('dd-sec', META.secs, state.secs, s=>s, null, 'btn-sec','cnt-sec');
+  setupEmpDropdown();
+  setupMonthSelects();
+  setupDropdownToggles();
+  setupReset();
+  setupNav();
+};
+
+/* Called by the upload module after DATA/EMP arrays have been
+   replaced in-place with freshly parsed records. Rebuilds the
+   filter universe + UI and resets filters to "show everything". */
+window.__RELOAD_DATA__ = function(){
+  recomputeMeta();
+  state.rounds = new Set(META.rounds);
+  state.secs = new Set(META.secs);
+  state.emp = null;
+  state.monthFrom = META.months[0];
+  state.monthTo = META.months[META.months.length-1];
+  state.tableQuery = '';
+  const ts = $('#tableSearch'); if(ts) ts.value='';
+  $('#emp-label').textContent = 'พนักงาน: ทั้งหมด';
+  $('#cnt-round').textContent = META.rounds.length;
+  $('#cnt-sec').textContent = META.secs.length;
+  buildCheckDropdown('dd-round', META.rounds, state.rounds, r=>'รอบ '+r, null, 'btn-round','cnt-round');
+  buildCheckDropdown('dd-sec', META.secs, state.secs, s=>s, null, 'btn-sec','cnt-sec');
+  setupEmpDropdown();
+  setupMonthSelects();
+  refreshAll();
+};
+
+window.refreshAll = function(){
+  updateChips();
+  renderView(state.view);
+};
+
+})();
+
+/* ============================================================
+   CANVAS CHART ENGINE — no external libraries
+   ============================================================ */
+(function(){
+"use strict";
+const H = window.__APP_HELPERS__;
+
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = Math.max(rect.width, 100);
+  const hgt = Math.max(rect.height, 100);
+  canvas.width = w*dpr; canvas.height = hgt*dpr;
+  canvas.style.width = w+'px'; canvas.style.height = hgt+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w, hgt};
+}
+
+function clearHit(canvas){ canvas.__hits = []; }
+function addHit(canvas, shape){ canvas.__hits.push(shape); }
+function pointInRect(x,y,r){ return x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
+function pointInCircleSector(x,y,cx,cy,rIn,rOut,a0,a1){
+  const dx=x-cx, dy=y-cy;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  if(dist<rIn || dist>rOut) return false;
+  let ang = Math.atan2(dy,dx);
+  while(ang < a0) ang += Math.PI*2;
+  while(a1 < ang) a1 += Math.PI*2;
+  return ang>=a0 && ang<=a1;
+}
+
+function bindHover(canvas){
+  if(canvas.__hoverBound) return;
+  canvas.__hoverBound = true;
+  canvas.addEventListener('mousemove', e=>{
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX-rect.left, y = e.clientY-rect.top;
+    const hits = canvas.__hits||[];
+    let found = null;
+    for(let i=hits.length-1;i>=0;i--){
+      const h = hits[i];
+      if(h.type==='rect' && pointInRect(x,y,h)){ found=h; break; }
+      if(h.type==='sector' && pointInCircleSector(x,y,h.cx,h.cy,h.rIn,h.rOut,h.a0,h.a1)){ found=h; break; }
+      if(h.type==='point'){
+        const dx=x-h.cx, dy=y-h.cy;
+        if(Math.sqrt(dx*dx+dy*dy)<=h.r+4){ found=h; break; }
+      }
+    }
+    if(found){
+      canvas.style.cursor='pointer';
+      H.showTooltip(e.clientX, e.clientY, found.title, found.rows);
+      if(found.onHover) found.onHover();
+    } else {
+      canvas.style.cursor='default';
+      H.hideTooltip();
+      if(canvas.__onLeaveHighlight) canvas.__onLeaveHighlight();
+    }
+  });
+  canvas.addEventListener('mouseleave', ()=>{ H.hideTooltip(); canvas.style.cursor='default'; });
+}
+
+function niceMax(v){
+  if(v<=0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const norm = v/mag;
+  let step;
+  if(norm<=1) step=1; else if(norm<=2) step=2; else if(norm<=5) step=5; else step=10;
+  return step*mag;
+}
+
+/* ---------------------------------------------------------
+   GRID + AXES helper
+--------------------------------------------------------- */
+function drawYAxis(ctx, pad, w, h, max, fmt, color){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillStyle = color || '#6E84A6';
+  ctx.font = '11px Sarabun, sans-serif';
+  ctx.textAlign='right';
+  const steps=4;
+  for(let i=0;i<=steps;i++){
+    const val = max*i/steps;
+    const y = h-pad.b-(h-pad.t-pad.b)*i/steps;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y);
+    ctx.stroke();
+    ctx.fillText(fmt(val), pad.l-8, y+3);
+  }
+  ctx.restore();
+}
+
+/* ===========================================================
+   1. BAR + LINE COMBO CHART
+=========================================================== */
+function drawComboChart(canvas, labels, barVals, lineVals, barColor, lineColor, barLabel, lineLabel){
+  const {ctx,w,hgt} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,hgt);
+  clearHit(canvas);
+  const pad = {l:42, r:42, t:18, b:30};
+  const maxBar = niceMax(Math.max(...barVals,1)*1.2);
+  const maxLine = niceMax(Math.max(...lineVals,1)*1.3);
+  drawYAxis(ctx,pad,w,hgt,maxBar,v=>fmt0(v));
+  const n = labels.length;
+  const slotW = (w-pad.l-pad.r)/n;
+  const barW = Math.min(slotW*0.42, 34);
+
+  // bars
+  barVals.forEach((v,i)=>{
+    const x = pad.l + slotW*i + slotW/2 - barW/2;
+    const bh = (hgt-pad.t-pad.b) * (v/maxBar);
+    const y = hgt-pad.b-bh;
+    const grad = ctx.createLinearGradient(0,y,0,hgt-pad.b);
+    grad.addColorStop(0, barColor);
+    grad.addColorStop(1, barColor+'33');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y, barW, bh, 5);
+    ctx.fill();
+    addHit(canvas, {type:'rect', x, y, w:barW, h:bh, title:labels[i],
+      rows:[{label:barLabel, value:fmt1(v), color:barColor},{label:lineLabel, value:fmt0(lineVals[i]), color:lineColor}]});
+  });
+
+  // line
+  const pts = lineVals.map((v,i)=>({
+    x: pad.l + slotW*i + slotW/2,
+    y: hgt-pad.b - (hgt-pad.t-pad.b)*(v/maxLine)
+  }));
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  pts.forEach((p,i)=> i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.stroke();
+  pts.forEach((p,i)=>{
+    ctx.fillStyle = '#0A1B33';
+    ctx.beginPath(); ctx.arc(p.x,p.y,4.5,0,7); ctx.fill();
+    ctx.lineWidth=2.2; ctx.strokeStyle=lineColor;
+    ctx.beginPath(); ctx.arc(p.x,p.y,4.5,0,7); ctx.stroke();
+    addHit(canvas, {type:'point', cx:p.x, cy:p.y, r:5, title:labels[i],
+      rows:[{label:barLabel, value:fmt1(barVals[i]), color:barColor},{label:lineLabel, value:fmt0(lineVals[i]), color:lineColor}]});
+  });
+
+  // x labels
+  ctx.fillStyle = '#A9BCD6';
+  ctx.font = '11.5px Sarabun, sans-serif';
+  ctx.textAlign = 'center';
+  labels.forEach((l,i)=>{
+    ctx.fillText(l, pad.l + slotW*i + slotW/2, hgt-8);
+  });
+  bindHover(canvas);
+}
+
+/* ===========================================================
+   2. SIMPLE BAR CHART (vertical)
+=========================================================== */
+function drawBarChart(canvas, labels, vals, colors, valueLabel){
+  const {ctx,w,hgt} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,hgt);
+  clearHit(canvas);
+  const pad = {l:42, r:14, t:18, b:46};
+  const maxV = niceMax(Math.max(...vals,1)*1.2);
+  drawYAxis(ctx,pad,w,hgt,maxV,v=>fmt0(v));
+  const n = labels.length;
+  const slotW = (w-pad.l-pad.r)/n;
+  const barW = Math.min(slotW*0.55, 40);
+  vals.forEach((v,i)=>{
+    const x = pad.l + slotW*i + slotW/2 - barW/2;
+    const bh = (hgt-pad.t-pad.b)*(v/maxV);
+    const y = hgt-pad.b-bh;
+    const c = Array.isArray(colors)? colors[i % colors.length] : colors;
+    const grad = ctx.createLinearGradient(0,y,0,hgt-pad.b);
+    grad.addColorStop(0,c); grad.addColorStop(1,c+'33');
+    ctx.fillStyle=grad;
+    roundRect(ctx,x,y,barW,Math.max(bh,2),5);
+    ctx.fill();
+    addHit(canvas,{type:'rect', x,y,w:barW,h:Math.max(bh,8), title:labels[i],
+      rows:[{label:valueLabel||'ค่า', value:fmt1(v), color:c}]});
+  });
+  ctx.fillStyle = '#A9BCD6';
+  ctx.font = '11px Sarabun, sans-serif';
+  ctx.textAlign='center';
+  labels.forEach((l,i)=>{
+    const x = pad.l + slotW*i + slotW/2;
+    wrapLabel(ctx, l, x, hgt-pad.b+16, slotW);
+  });
+  bindHover(canvas);
+}
+function wrapLabel(ctx, text, x, y, maxW){
+  if(ctx.measureText(text).width <= maxW){ ctx.fillText(text,x,y); return; }
+  // rotate small labels if too long
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(-0.4);
+  ctx.textAlign='right';
+  ctx.fillText(text,4,0);
+  ctx.restore();
+}
+
+/* ===========================================================
+   3. HORIZONTAL BAR CHART (top-N)
+=========================================================== */
+function drawHBarChart(canvas, labels, vals, color, valueLabel){
+  const {ctx,w,hgt} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,hgt);
+  clearHit(canvas);
+  const pad = {l:96, r:50, t:10, b:10};
+  const maxV = niceMax(Math.max(...vals,1)*1.15);
+  const n = labels.length;
+  const slotH = (hgt-pad.t-pad.b)/n;
+  const barH = Math.min(slotH*0.55, 22);
+  vals.forEach((v,i)=>{
+    const y = pad.t + slotH*i + slotH/2 - barH/2;
+    const bw = (w-pad.l-pad.r)*(v/maxV);
+    const grad = ctx.createLinearGradient(pad.l,0,pad.l+bw,0);
+    grad.addColorStop(0,color+'55'); grad.addColorStop(1,color);
+    ctx.fillStyle=grad;
+    roundRect(ctx,pad.l,y,Math.max(bw,3),barH,5);
+    ctx.fill();
+    ctx.fillStyle = '#F4F8FD';
+    ctx.font='11px JetBrains Mono, monospace';
+    ctx.textAlign='left';
+    ctx.fillText(fmt0(v), pad.l+bw+8, y+barH/2+4);
+    ctx.fillStyle = '#A9BCD6';
+    ctx.font='11.5px Sarabun, sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText(labels[i], pad.l-10, y+barH/2+4);
+    addHit(canvas,{type:'rect', x:pad.l, y, w:Math.max(bw,3), h:barH, title:labels[i],
+      rows:[{label:valueLabel||'ค่า', value:fmt0(v), color}]});
+  });
+  bindHover(canvas);
+}
+
+/* ===========================================================
+   4. STACKED BAR CHART
+=========================================================== */
+function drawStackedBar(canvas, labels, series /* [{key,label,color,values:[]}] */){
+  const {ctx,w,hgt} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,hgt);
+  clearHit(canvas);
+  const pad = {l:42, r:14, t:18, b:30};
+  const totals = labels.map((_,i)=> series.reduce((a,s)=>a+s.values[i],0));
+  const maxV = niceMax(Math.max(...totals,1)*1.2);
+  drawYAxis(ctx,pad,w,hgt,maxV,v=>fmt0(v));
+  const n = labels.length;
+  const slotW = (w-pad.l-pad.r)/n;
+  const barW = Math.min(slotW*0.5, 44);
+  labels.forEach((lab,i)=>{
+    let yCursor = hgt-pad.b;
+    const x = pad.l + slotW*i + slotW/2 - barW/2;
+    const rowsForTip = [];
+    series.forEach(s=>{
+      const v = s.values[i];
+      const bh = (hgt-pad.t-pad.b)*(v/maxV);
+      const y = yCursor-bh;
+      if(bh>0.3){
+        ctx.fillStyle = s.color;
+        ctx.fillRect(x,y,barW,bh);
+      }
+      addHit(canvas,{type:'rect', x, y, w:barW, h:Math.max(bh,0), title:lab+' • '+s.label,
+        rows:[{label:s.label, value:fmt1(v), color:s.color}]});
+      rowsForTip.push({label:s.label, value:fmt1(v), color:s.color});
+      yCursor = y;
+    });
+    ctx.fillStyle='#A9BCD6';
+    ctx.font='11.5px Sarabun, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(lab, pad.l + slotW*i + slotW/2, hgt-10);
+  });
+  bindHover(canvas);
+}
+
+/* ===========================================================
+   5. DONUT / PIE CHART
+=========================================================== */
+function drawDonut(canvas, segs /* [{label,value,color}] */, donut){
+  const {ctx,w,hgt} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,hgt);
+  clearHit(canvas);
+  const cx=w/2, cy=hgt/2;
+  const rOut = Math.min(w,hgt)/2 - 14;
+  const rIn = donut===false ? 0 : rOut*0.58;
+  const total = segs.reduce((a,s)=>a+s.value,0) || 1;
+  let a0 = -Math.PI/2;
+  segs.forEach(s=>{
+    const frac = s.value/total;
+    const a1 = a0 + frac*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,rOut,a0,a1);
+    ctx.closePath();
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    if(rIn>0){
+      ctx.beginPath();
+      ctx.arc(cx,cy,rIn,0,Math.PI*2);
+      ctx.fillStyle = getComputedStyle(canvas.parentElement.closest('.panel')||document.body).getPropertyValue('--bgfallback') || '#0E2240';
+      ctx.fill();
+    }
+    addHit(canvas,{type:'sector', cx,cy, rIn, rOut, a0, a1, title:s.label,
+      rows:[{label:'จำนวน', value:fmt1(s.value), color:s.color},{label:'สัดส่วน', value:(frac*100).toFixed(1)+'%', color:s.color}]});
+    a0 = a1;
+  });
+  if(rIn>0){
+    ctx.fillStyle = '#F4F8FD';
+    ctx.font = '700 20px JetBrains Mono, monospace';
+    ctx.textAlign='center';
+    ctx.fillText(fmt0(total), cx, cy-2);
+    ctx.fillStyle = '#6E84A6';
+    ctx.font = '11px Sarabun, sans-serif';
+    ctx.fillText('รวมทั้งหมด', cx, cy+16);
+  }
+  bindHover(canvas);
+}
+
+/* ===========================================================
+   6. RADAR CHART (supports multiple series)
+=========================================================== */
+function drawRadar(canvas, axisLabels, series /* [{label,color,values:[],dashed}] */, maxVal){
+  const {ctx,w,hgt} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,hgt);
+  clearHit(canvas);
+  const cx=w/2, cy=hgt/2+6;
+  const R = Math.min(w,hgt)/2 - 44;
+  const n = axisLabels.length;
+  const angle = i => -Math.PI/2 + i*(Math.PI*2/n);
+
+  // grid rings
+  const rings=4;
+  ctx.strokeStyle='rgba(255,255,255,0.07)';
+  for(let ring=1; ring<=rings; ring++){
+    ctx.beginPath();
+    const r = R*ring/rings;
+    for(let i=0;i<=n;i++){
+      const a = angle(i%n);
+      const x = cx+r*Math.cos(a), y = cy+r*Math.sin(a);
+      i===0? ctx.moveTo(x,y): ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  // spokes + labels
+  ctx.fillStyle='#A9BCD6';
+  ctx.font='11.5px Sarabun, sans-serif';
+  for(let i=0;i<n;i++){
+    const a = angle(i);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+R*Math.cos(a), cy+R*Math.sin(a));
+    ctx.strokeStyle='rgba(255,255,255,0.07)';
+    ctx.stroke();
+    const lx = cx+(R+22)*Math.cos(a), ly = cy+(R+22)*Math.sin(a);
+    ctx.textAlign = Math.abs(Math.cos(a))<0.2 ? 'center' : (Math.cos(a)>0?'left':'right');
+    ctx.fillText(axisLabels[i], lx, ly+4);
+  }
+
+  // series polygons
+  series.forEach(s=>{
+    const pts = s.values.map((v,i)=>{
+      const a = angle(i);
+      const r = R*Math.min(v/maxVal,1);
+      return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)};
+    });
+    ctx.beginPath();
+    pts.forEach((p,i)=> i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.closePath();
+    if(s.dashed) ctx.setLineDash([5,4]); else ctx.setLineDash([]);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = s.color+'22';
+    ctx.fill();
+    ctx.setLineDash([]);
+    pts.forEach((p,i)=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,3.5,0,7);
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      addHit(canvas,{type:'point', cx:p.x, cy:p.y, r:5, title:axisLabels[i],
+        rows: series.map(s2=>({label:s2.label, value:fmt1(s2.values[i]), color:s2.color}))});
+    });
+  });
+  bindHover(canvas);
+}
+
+/* ---------- util ---------- */
+function roundRect(ctx,x,y,w,h,r){
+  if(h<=0){ h=0.1; }
+  r = Math.min(r, w/2, Math.abs(h)/2 || r);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function fmt0(n){ return Math.round(n).toLocaleString('en-US'); }
+function fmt1(n){ return (Math.round(n*10)/10).toLocaleString('en-US'); }
+
+window.__CHARTS__ = {
+  drawComboChart, drawBarChart, drawHBarChart, drawStackedBar, drawDonut, drawRadar
+};
+})();
+
+/* ============================================================
+   RENDER LAYER — KPI cards, charts, table per view
+   ============================================================ */
+(function(){
+"use strict";
+const H = window.__APP_HELPERS__;
+const C = window.__CHARTS__;
+const state = window.__APP_STATE__;
+
+function fmt1(n){ return (Math.round(n*10)/10).toLocaleString('en-US'); }
+function fmt0(n){ return Math.round(n).toLocaleString('en-US'); }
+
+/* ---------------- KPI CARDS (Overview) ---------------- */
+function renderKPIs(rows){
+  const k = H.computeKPIs(rows);
+  const cards = [
+    {label:'พนักงานทั้งหมด', icon:'👥', value: fmt0(k.employees), unit:'คน', color:'#5BA8FF', pct: 100},
+    {label:'วันลารวมทุกประเภท', icon:'🗂', value: fmt1(k.leaveDays), unit:'วัน', color:'#FFC83D', pct: Math.min(100, k.leaveDays/Math.max(1,k.employees*8)*100)},
+    {label:'จำนวนครั้งมาสาย', icon:'⏱', value: fmt0(k.lateCount), unit:'ครั้ง', color:'#FF6E6E', pct: Math.min(100, k.lateCount/Math.max(1,k.records)*400)},
+    {label:'นาทีสายรวม', icon:'⌛', value: fmt0(k.lateMinutes), unit:'นาที', color:'#B58CFF', pct: Math.min(100, k.lateMinutes/Math.max(1,k.lateCount*30||1)*60)},
+    {label:'เฉลี่ยสายต่อครั้ง', icon:'📊', value: fmt1(k.avgLate), unit:'นาที', color:'#3FD79A', pct: Math.min(100, k.avgLate/30*100)},
+    {label:'อัตรามาตรงเวลา', icon:'✅', value: fmt1(k.onTimeRate), unit:'%', color: k.onTimeRate>90?'#3FD79A':'#FFC83D', pct: k.onTimeRate}
+  ];
+  H.$('#kpiGrid').innerHTML = cards.map(c=>`
+    <div class="kpi-card">
+      <div class="label"><span>${c.icon}</span>${c.label}</div>
+      <div class="value">${c.value}<span class="unit">${c.unit}</span></div>
+      <div class="bar-mini"><i style="width:${Math.max(4,c.pct)}%;background:${c.color};"></i></div>
+    </div>
+  `).join('');
+}
+
+function renderLateKPIs(rows){
+  const k = H.computeKPIs(rows);
+  const topLateRow = (()=>{
+    const byEmp = {};
+    rows.forEach(r=>{ if(r.lt>0){ byEmp[r.code]=(byEmp[r.code]||0)+r.lt; } });
+    const entries = Object.entries(byEmp).sort((a,b)=>b[1]-a[1]);
+    if(!entries.length) return {nm:'-', val:0};
+    const emp = EMP.find(e=>e.code===Number(entries[0][0]));
+    return {nm: emp?emp.nm:'-', val: entries[0][1]};
+  })();
+  const cards = [
+    {label:'จำนวนครั้งมาสายรวม', value: fmt0(k.lateCount), unit:'ครั้ง', color:'#FF6E6E'},
+    {label:'นาทีสายรวมทั้งหมด', value: fmt0(k.lateMinutes), unit:'นาที', color:'#B58CFF'},
+    {label:'เฉลี่ยนาทีสาย/ครั้ง', value: fmt1(k.avgLate), unit:'นาที', color:'#FFC83D'},
+    {label:'สายสูงสุด', value: topLateRow.nm, unit: fmt0(topLateRow.val)+' นาที', color:'#3FD79A'}
+  ];
+  H.$('#kpiGridLate').innerHTML = cards.map(c=>`
+    <div class="kpi-card">
+      <div class="label">${c.label}</div>
+      <div class="value" style="font-size:${c.label==='สายสูงสุด'?'19px':'26px'};">${c.value}<span class="unit">${c.unit}</span></div>
+    </div>
+  `).join('');
+}
+
+/* ---------------- helpers for grouping ---------------- */
+function byMonth(rows){
+  const map = {};
+  H.ALL_MONTHS.forEach(m=>map[m]={v:0,si:0,p:0,pu:0,ab:0,ot:0,lateCount:0,lateMin:0});
+  rows.forEach(r=>{
+    const o = map[r.mo]; if(!o) return;
+    H.LEAVE_TYPES.forEach(t=> o[t.key]+=r[t.key]||0);
+    if(r.lt>0){ o.lateCount++; o.lateMin += r.lt; }
+  });
+  return map;
+}
+function bySec(rows){
+  const map = {};
+  rows.forEach(r=>{
+    if(!map[r.sec]) map[r.sec] = {v:0,si:0,p:0,pu:0,ab:0,ot:0};
+    H.LEAVE_TYPES.forEach(t=> map[r.sec][t.key]+=r[t.key]||0);
+  });
+  return map;
+}
+
+/* ---------------- OVERVIEW VIEW ---------------- */
+function renderOverview(rows){
+  renderKPIs(rows);
+
+  // Donut: leave type ratio
+  const segs = H.LEAVE_TYPES.map(t=>({label:t.label, value:H.sumType(rows,t.key), color:t.color}))
+    .filter(s=>s.value>0.001);
+  C.drawDonut(H.$('#chartDonut'), segs.length?segs:[{label:'ไม่มีข้อมูล',value:1,color:'#1B3760'}], true);
+  H.$('#legendDonut').innerHTML = H.LEAVE_TYPES.map(t=>
+    `<div class="legend-item"><span class="legend-dot" style="background:${t.color}"></span>${t.label}</div>`).join('');
+
+  // Combo: monthly leave days (bar) vs late count (line)
+  const mm = byMonth(rows);
+  const labels = H.ALL_MONTHS.filter(m=>H.ALL_MONTHS.indexOf(m)>=H.ALL_MONTHS.indexOf(state.monthFrom) && H.ALL_MONTHS.indexOf(m)<=H.ALL_MONTHS.indexOf(state.monthTo));
+  const barVals = labels.map(m=> H.LEAVE_TYPES.reduce((a,t)=>a+mm[m][t.key],0));
+  const lineVals = labels.map(m=> mm[m].lateCount);
+  C.drawComboChart(H.$('#chartComboTrend'), labels.map(m=>H.monthLabel(m)), barVals, lineVals, '#FFC83D', '#5BA8FF', 'วันลารวม (วัน)', 'มาสาย (ครั้ง)');
+  H.$('#legendCombo').innerHTML = `
+    <div class="legend-item"><span class="legend-dot" style="background:#FFC83D"></span>วันลารวม</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#5BA8FF;border-radius:50%;"></span>มาสาย (ครั้ง)</div>`;
+}
+
+/* ---------------- LEAVE VIEW ---------------- */
+function renderLeave(rows){
+  const allRows = DATA; // baseline = entire company, unfiltered
+  const empsFiltered = new Set(rows.map(r=>r.code)).size || 1;
+  const empsAll = new Set(allRows.map(r=>r.code)).size || 1;
+
+  const radarLabels = H.LEAVE_TYPES.map(t=>t.label);
+  const filteredAvg = H.LEAVE_TYPES.map(t=> H.sumType(rows,t.key)/empsFiltered);
+  const baselineAvg = H.LEAVE_TYPES.map(t=> H.sumType(allRows,t.key)/empsAll);
+  const maxVal = Math.max(...filteredAvg, ...baselineAvg, 0.5) * 1.25;
+
+  C.drawRadar(H.$('#chartRadar'), radarLabels, [
+    {label:'ทั้งบริษัท (Baseline)', color:'#5BA8FF', values:baselineAvg, dashed:true},
+    {label:'ตามตัวกรองปัจจุบัน', color:'#FFC83D', values:filteredAvg, dashed:false}
+  ], maxVal);
+  H.$('#legendRadar').innerHTML = `
+    <div class="legend-item"><span class="legend-dot" style="background:#FFC83D"></span>ตามตัวกรองปัจจุบัน</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#5BA8FF"></span>ทั้งบริษัท (เส้นประ)</div>`;
+
+  // Stacked bar by month
+  const mm = byMonth(rows);
+  const labels = H.ALL_MONTHS.filter(m=>H.ALL_MONTHS.indexOf(m)>=H.ALL_MONTHS.indexOf(state.monthFrom) && H.ALL_MONTHS.indexOf(m)<=H.ALL_MONTHS.indexOf(state.monthTo));
+  const series = H.LEAVE_TYPES.map(t=>({label:t.label, color:t.color, values: labels.map(m=>mm[m][t.key])}));
+  C.drawStackedBar(H.$('#chartStacked'), labels.map(m=>H.monthLabel(m)), series);
+  H.$('#legendStacked').innerHTML = H.LEAVE_TYPES.map(t=>
+    `<div class="legend-item"><span class="legend-dot" style="background:${t.color}"></span>${t.label}</div>`).join('');
+
+  // Bar by Sec
+  const secMap = bySec(rows);
+  const secEntries = Object.entries(secMap).map(([sec,v])=>({sec, total:H.LEAVE_TYPES.reduce((a,t)=>a+v[t.key],0)}))
+    .filter(e=>e.sec && e.sec!=='-').sort((a,b)=>b.total-a.total).slice(0,10);
+  C.drawBarChart(H.$('#chartSecBar'), secEntries.map(e=>e.sec), secEntries.map(e=>e.total), '#5BA8FF', 'วันลารวม');
+
+  // Pie2: sick vs personal vs vacation
+  const pieSegs = [
+    {label:'ป่วย', value:H.sumType(rows,'si'), color:'#FF6E6E'},
+    {label:'กิจ', value:H.sumType(rows,'p')+H.sumType(rows,'pu'), color:'#FFC83D'},
+    {label:'พักร้อน', value:H.sumType(rows,'v'), color:'#5BA8FF'},
+    {label:'ขาดงาน/อื่นๆ', value:H.sumType(rows,'ab')+H.sumType(rows,'ot'), color:'#B58CFF'}
+  ].filter(s=>s.value>0.001);
+  C.drawDonut(H.$('#chartPie2'), pieSegs.length?pieSegs:[{label:'ไม่มีข้อมูล',value:1,color:'#1B3760'}], false);
+  H.$('#legendPie2').innerHTML = pieSegs.map(s=>
+    `<div class="legend-item"><span class="legend-dot" style="background:${s.color}"></span>${s.label}</div>`).join('');
+}
+
+/* ---------------- LATE VIEW ---------------- */
+function renderLate(rows){
+  renderLateKPIs(rows);
+  const mm = byMonth(rows);
+  const labels = H.ALL_MONTHS.filter(m=>H.ALL_MONTHS.indexOf(m)>=H.ALL_MONTHS.indexOf(state.monthFrom) && H.ALL_MONTHS.indexOf(m)<=H.ALL_MONTHS.indexOf(state.monthTo));
+  const barVals = labels.map(m=>mm[m].lateCount);
+  const lineVals = labels.map(m=>mm[m].lateMin);
+  C.drawComboChart(H.$('#chartLateTrend'), labels.map(m=>H.monthLabel(m)), barVals, lineVals, '#FF6E6E', '#FFC83D', 'จำนวนครั้ง', 'นาทีสายรวม');
+  H.$('#legendLateTrend').innerHTML = `
+    <div class="legend-item"><span class="legend-dot" style="background:#FF6E6E"></span>จำนวนครั้งมาสาย</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#FFC83D;border-radius:50%;"></span>นาทีสายรวม</div>`;
+
+  const byEmp = {};
+  rows.forEach(r=>{ if(r.lt>0){ byEmp[r.code]=(byEmp[r.code]||0)+r.lt; } });
+  const top = Object.entries(byEmp).map(([code,val])=>{
+    const emp = EMP.find(e=>e.code===Number(code));
+    return {nm: emp?emp.nm:code, val};
+  }).sort((a,b)=>b.val-a.val).slice(0,10);
+  if(top.length){
+    C.drawHBarChart(H.$('#chartTopLate'), top.map(t=>t.nm), top.map(t=>t.val), '#FF6E6E', 'นาทีสายรวม');
+  } else {
+    const canvas = H.$('#chartTopLate');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+}
+
+/* ---------------- EMPLOYEES TABLE ---------------- */
+function buildEmpSummary(rows){
+  const map = {};
+  rows.forEach(r=>{
+    if(!map[r.code]) map[r.code] = {code:r.code, nm:r.nm, full:r.full, sec:r.sec, dept:r.dept,
+      vac:0, sick:0, pers:0, abs:0, totalLeave:0, lateCount:0, lateMin:0};
+    const o = map[r.code];
+    o.vac += r.v; o.sick += r.si; o.pers += r.p+r.pu; o.abs += r.ab;
+    o.totalLeave += (r.v+r.si+r.p+r.pu+r.ab+r.ot);
+    if(r.lt>0){ o.lateCount++; o.lateMin += r.lt; }
+  });
+  return Object.values(map);
+}
+function statusFor(emp){
+  if(emp.abs>0 || emp.lateCount>=5) return {cls:'s-bad', txt:'ควรติดตาม'};
+  if(emp.lateCount>=2 || emp.totalLeave>=4) return {cls:'s-warn', txt:'เฝ้าระวัง'};
+  return {cls:'s-ok', txt:'ปกติ'};
+}
+function renderTable(rows){
+  let summary = buildEmpSummary(rows);
+  const q = state.tableQuery.trim().toLowerCase();
+  if(q){
+    summary = summary.filter(e=> e.full.toLowerCase().includes(q) || e.nm.toLowerCase().includes(q) ||
+      String(e.code).includes(q) || (e.sec||'').toLowerCase().includes(q) || (e.dept||'').toLowerCase().includes(q));
+  }
+  summary.sort((a,b)=>{
+    const k = state.sortKey;
+    let av=a[k], bv=b[k];
+    if(typeof av==='string') return state.sortDir * av.localeCompare(bv);
+    return state.sortDir * ((av||0)-(bv||0));
+  });
+  H.$('#empTableCount').textContent = '('+summary.length+' คน)';
+  H.$('#empTableBody').innerHTML = summary.map(e=>{
+    const st = statusFor(e);
+    const initials = (e.nm||'?').slice(0,2);
+    return `<tr>
+      <td><div class="namecell"><div class="avatar">${initials}</div><div><div class="nm">${e.nm}</div><div class="fl">${e.full} • ${e.code}</div></div></div></td>
+      <td>${e.sec||'-'}</td>
+      <td>${e.dept||'-'}</td>
+      <td class="numcell">${fmt1(e.vac)}</td>
+      <td class="numcell">${fmt1(e.sick)}</td>
+      <td class="numcell">${fmt1(e.pers)}</td>
+      <td class="numcell">${fmt1(e.abs)}</td>
+      <td class="numcell">${fmt1(e.totalLeave)}</td>
+      <td class="numcell">${fmt0(e.lateCount)}</td>
+      <td class="numcell">${fmt0(e.lateMin)}</td>
+      <td><span class="pill ${st.cls}">${st.txt}</span></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="11"><div class="empty-state">ไม่พบข้อมูลที่ตรงกับการค้นหา / ตัวกรอง</div></td></tr>`;
+  H.$('#tableFoot').textContent = `แสดง ${summary.length} จาก ${new Set(DATA.map(d=>d.code)).size} พนักงานทั้งหมด`;
+}
+
+/* ---------------- MASTER RENDER ---------------- */
+window.renderView = function(view){
+  const rows = H.getFiltered();
+  if(view==='overview') renderOverview(rows);
+  else if(view==='leave') renderLeave(rows);
+  else if(view==='late') renderLate(rows);
+  else if(view==='employees') renderTable(rows);
+};
+
+function setupTableInteractions(){
+  H.$('#tableSearch').addEventListener('input', e=>{
+    state.tableQuery = e.target.value;
+    renderTable(H.getFiltered());
+  });
+  document.querySelectorAll('th[data-key]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.key;
+      if(state.sortKey===k) state.sortDir *= -1; else { state.sortKey=k; state.sortDir=-1; }
+      renderTable(H.getFiltered());
+    });
+  });
+}
+
+/* ---------------- BOOT ---------------- */
+function boot(){
+  window.__INIT_FILTERS__();
+  setupTableInteractions();
+  renderView('overview');
+  window.addEventListener('resize', ()=> renderView(state.view));
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', boot);
+} else { boot(); }
+
+})();
+
+/* ============================================================
+   UPLOAD & PARSE MODULE
+   Lets the user re-upload an updated export of the "Rawdata"
+   sheet (.xlsx / .xls / .csv) and have the whole dashboard
+   rebuild itself from the new data — all in the browser, no
+   server round-trip.
+   ============================================================ */
+(function(){
+"use strict";
+
+/* Snapshot of the data the dashboard shipped with, so the user
+   can always get back to it. */
+const ORIGINAL_DATA = JSON.parse(JSON.stringify(DATA));
+const ORIGINAL_EMP   = JSON.parse(JSON.stringify(EMP));
+
+/* ---------------- header detection ---------------- */
+const HEADER_MAP = {
+  'รอบ':'rd', 'รหัส':'code', 'คำนำ':'prefix', 'ชื่อ':'fname', 'สกุล':'lname',
+  'ชื่อเล่น':'nm', 'Sec.':'sec', 'Sec':'sec', 'Dept.':'dept', 'Dept':'dept',
+  'วันที่ลา':'date', 'พักร้อน':'v', 'ป่วย':'si', 'กิจ':'p',
+  'กิจ-ไม่จ.':'pu', 'กิจ-ไม่จ่าย':'pu', 'ขาดงาน':'ab', 'อื่นๆ':'ot', 'สาย':'lt'
+};
+function norm(s){
+  return String(s==null?'':s).replace(/\s+/g,'').trim();
+}
+const NORM_HEADER_MAP = Object.fromEntries(
+  Object.entries(HEADER_MAP).map(([k,v])=>[norm(k),v])
+);
+
+function findHeaderRow(rows2D){
+  for(let i=0;i<Math.min(rows2D.length,30);i++){
+    const row = rows2D[i] || [];
+    const hits = row.filter(cell => NORM_HEADER_MAP[norm(cell)]).length;
+    if(hits >= 4) return i; // need a handful of recognizable headers
+  }
+  return -1;
+}
+
+function buildColMap(headerRow){
+  const map = {};
+  headerRow.forEach((cell,idx)=>{
+    const key = NORM_HEADER_MAP[norm(cell)];
+    if(key && map[key]===undefined) map[key]=idx;
+  });
+  return map;
+}
+
+/* ---------------- value coercion ---------------- */
+function numSafe(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return isFinite(v)?v:0;
+  const f = parseFloat(String(v).replace(/,/g,''));
+  return isNaN(f)?0:f;
+}
+function excelSerialToDate(serial){
+  // Excel's day-0 is 1899-12-30 (handles the 1900 leap-year bug)
+  const ms = Math.round((serial - 25569)*86400*1000);
+  return new Date(ms);
+}
+function expandYear(y){
+  const n = Number(y);
+  return n < 100 ? n + 2000 : n;
+}
+function dateParts(v){
+  if(v===null||v===undefined||v==='') return null;
+  if(v instanceof Date && !isNaN(v)){
+    return {y:v.getUTCFullYear(), m:v.getUTCMonth()+1, d:v.getUTCDate()};
+  }
+  if(typeof v==='number'){
+    const d = excelSerialToDate(v);
+    return {y:d.getUTCFullYear(), m:d.getUTCMonth()+1, d:d.getUTCDate()};
+  }
+  if(typeof v==='string'){
+    const s = v.trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return {y:+m[1], m:+m[2], d:+m[3]};
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if(m){
+      const first = +m[1], second = +m[2], y = expandYear(m[3]);
+      // Google Sheets in th_TH formats dates as d/m/yy.
+      if(first > 12) return {y:y, m:second, d:first};
+      if(second > 12) return {y:y, m:first, d:second};
+      return {y:y, m:second, d:first};
+    }
+    const d = new Date(s);
+    if(!isNaN(d)) return {y:d.getFullYear(), m:d.getMonth()+1, d:d.getDate()};
+  }
+  return null;
+}
+function lateMinutes(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(v instanceof Date && !isNaN(v)){
+    return v.getUTCHours()*60 + v.getUTCMinutes() + v.getUTCSeconds()/60;
+  }
+  if(typeof v==='number'){
+    if(!isFinite(v)) return 0;
+    const frac = v - Math.floor(v);
+    return frac*24*60;
+  }
+  if(typeof v==='string'){
+    const m = v.match(/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/);
+    if(m) return (+m[1])*60 + (+m[2]) + (m[3]?(+m[3])/60:0);
+    const f = parseFloat(v);
+    if(!isNaN(f)) return f<1 ? f*24*60 : 0;
+  }
+  return 0;
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+/* ---------------- core parse: rows2D -> compact records ---------------- */
+function parseRows(rows2D){
+  const headerIdx = findHeaderRow(rows2D);
+  if(headerIdx === -1){
+    throw new Error('ไม่พบแถวหัวตาราง (header) ที่ตรงกับรูปแบบที่รองรับ เช่น "รอบ", "รหัส", "วันที่ลา" — กรุณาตรวจสอบว่าไฟล์มาจากชีต Rawdata');
+  }
+  const colMap = buildColMap(rows2D[headerIdx]);
+  if(colMap.code===undefined){
+    throw new Error('ไม่พบคอลัมน์ "รหัส" (รหัสพนักงาน) ในไฟล์ที่อัปโหลด');
+  }
+
+  const records = [];
+  for(let i=headerIdx+1; i<rows2D.length; i++){
+    const row = rows2D[i] || [];
+    const codeVal = row[colMap.code];
+    if(codeVal===null||codeVal===undefined||String(codeVal).trim()==='') continue;
+    const code = numSafe(codeVal);
+    if(!code) continue;
+
+    const dp = dateParts(colMap.date!==undefined ? row[colMap.date] : null);
+    const mo = dp ? `${dp.y}-${pad2(dp.m)}` : null;
+    const dt = dp ? `${dp.y}-${pad2(dp.m)}-${pad2(dp.d)}` : null;
+
+    const prefix = colMap.prefix!==undefined ? (row[colMap.prefix]||'') : '';
+    const fname  = colMap.fname!==undefined  ? (row[colMap.fname]||'')  : '';
+    const lname  = colMap.lname!==undefined  ? (row[colMap.lname]||'')  : '';
+    const nm     = colMap.nm!==undefined ? String(row[colMap.nm]||'').trim() : String(code);
+
+    records.push({
+      rd:   colMap.rd!==undefined   ? numSafe(row[colMap.rd]) : 0,
+      code: code,
+      nm:   nm || String(code),
+      full: `${prefix}${fname} ${lname}`.trim() || nm || String(code),
+      sec:  colMap.sec!==undefined  ? String(row[colMap.sec]||'').trim()  : '-',
+      dept: colMap.dept!==undefined ? String(row[colMap.dept]||'').trim() : '-',
+      dt, mo,
+      v:  colMap.v!==undefined  ? numSafe(row[colMap.v])  : 0,
+      si: colMap.si!==undefined ? numSafe(row[colMap.si]) : 0,
+      p:  colMap.p!==undefined  ? numSafe(row[colMap.p])  : 0,
+      pu: colMap.pu!==undefined ? numSafe(row[colMap.pu]) : 0,
+      ab: colMap.ab!==undefined ? numSafe(row[colMap.ab]) : 0,
+      ot: colMap.ot!==undefined ? numSafe(row[colMap.ot]) : 0,
+      lt: colMap.lt!==undefined ? lateMinutes(row[colMap.lt]) : 0
+    });
+  }
+  if(!records.length){
+    throw new Error('พบหัวตารางแต่ไม่พบแถวข้อมูล กรุณาตรวจสอบไฟล์อีกครั้ง');
+  }
+  // drop rows where date failed to parse AND every numeric field is 0 (likely stray/blank rows)
+  return records.filter(r => r.mo || r.v||r.si||r.p||r.pu||r.ab||r.ot||r.lt);
+}
+
+function buildEmpList(records){
+  const map = {};
+  records.forEach(r=>{ map[r.code] = {code:r.code, nm:r.nm, full:r.full, sec:r.sec, dept:r.dept}; });
+  return Object.values(map).sort((a,b)=> (a.sec||'').localeCompare(b.sec||'') || a.nm.localeCompare(b.nm));
+}
+
+/* ---------------- CSV parsing (simple, quote-aware) ---------------- */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field+='"'; i++; } else { inQuotes=false; }
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+/* ---------------- sheet picking (xlsx) ---------------- */
+function pickSheet(workbook){
+  const names = workbook.SheetNames;
+  const exact = names.find(n => norm(n).toLowerCase() === 'rawdata');
+  if(exact) return exact;
+  const partial = names.find(n => norm(n).toLowerCase().includes('rawdata') || norm(n).toLowerCase().includes('raw'));
+  return partial || names[0];
+}
+
+/* ---------------- UI: toast + overlay ---------------- */
+function showToast(kind, title, detail){
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind||'');
+  el.innerHTML = `<div class="tt">${kind==='ok'?'✅':kind==='err'?'⚠️':'ℹ️'} ${title}</div><div class="ds">${detail||''}</div>`;
+  stack.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 6000);
+}
+function setOverlay(show){
+  document.getElementById('uploadOverlay').classList.toggle('show', !!show);
+}
+function updateSourceChip(name, count, range){
+  const el = document.getElementById('dataSourceChip');
+  if(!el) return;
+  el.innerHTML = `<div class="chip src">📄 ข้อมูลปัจจุบัน: <b>${name}</b> • ${count.toLocaleString('en-US')} แถว${range?(' • '+range):''}</div>`;
+}
+
+function dateRangeLabel(records){
+  const months = Array.from(new Set(records.map(r=>r.mo).filter(Boolean))).sort();
+  if(!months.length) return '';
+  const H = window.__APP_HELPERS__;
+  return H.monthLabel(months[0]) + ' – ' + H.monthLabel(months[months.length-1]);
+}
+
+/* ---------------- main handlers ---------------- */
+function applyRecords(records, sourceLabel, opts){
+  opts = opts || {};
+  const empList = buildEmpList(records);
+  DATA.length = 0; DATA.push(...records);
+  EMP.length = 0; EMP.push(...empList);
+  window.__RELOAD_DATA__();
+  updateSourceChip(sourceLabel, records.length, dateRangeLabel(records));
+  document.getElementById('revertBtn').style.display = opts.showRevert === false ? 'none' : 'inline-flex';
+  if(opts.silent !== true){
+    const sourceKind = opts.sourceKind || 'ไฟล์';
+    showToast('ok', opts.title || 'อัปเดตข้อมูลสำเร็จ', `โหลด ${records.length.toLocaleString('en-US')} แถว • ${empList.length} พนักงาน จาก${sourceKind} "${sourceLabel}"`);
+  }
+}
+
+window.__DATA_IO__ = {
+  parseRows,
+  parseCSV,
+  applyRecords,
+  showToast,
+  updateSourceChip,
+  dateRangeLabel
+};
+
+function handleFile(file){
+  setOverlay(true);
+  const name = file.name;
+  const ext = name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  reader.onerror = ()=>{ setOverlay(false); showToast('err','อ่านไฟล์ไม่สำเร็จ','ลองอีกครั้งหรือตรวจสอบว่าไฟล์ไม่เสียหาย'); };
+
+  if(ext === 'csv'){
+    reader.onload = e=>{
+      try{
+        const rows2D = parseCSV(e.target.result);
+        const records = parseRows(rows2D);
+        applyRecords(records, name);
+      } catch(err){
+        showToast('err','อัปโหลดไม่สำเร็จ', err.message);
+      } finally { setOverlay(false); }
+    };
+    reader.readAsText(file, 'utf-8');
+  } else if(ext === 'xlsx' || ext === 'xls'){
+    reader.onload = e=>{
+      try{
+        if(typeof XLSX === 'undefined'){
+          throw new Error('ไม่สามารถโหลดไลบรารีอ่านไฟล์ Excel ได้ (ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต) — ลองบันทึกเป็น .csv แล้วอัปโหลดใหม่');
+        }
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+        const sheetName = pickSheet(wb);
+        const sheet = wb.Sheets[sheetName];
+        const rows2D = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, defval:null});
+        const records = parseRows(rows2D);
+        applyRecords(records, `${name} (${sheetName})`);
+      } catch(err){
+        showToast('err','อัปโหลดไม่สำเร็จ', err.message);
+      } finally { setOverlay(false); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    setOverlay(false);
+    showToast('err','ไม่รองรับไฟล์ประเภทนี้','กรุณาอัปโหลดไฟล์ .xlsx, .xls หรือ .csv');
+  }
+}
+
+function boot(){
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileInput = document.getElementById('fileInput');
+  const revertBtn = document.getElementById('revertBtn');
+
+  uploadBtn.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(file) handleFile(file);
+    fileInput.value = '';
+  });
+  revertBtn.addEventListener('click', ()=>{
+    applyRecords(JSON.parse(JSON.stringify(ORIGINAL_DATA)), 'ข้อมูลเริ่มต้น (ไฟล์แนบแรก)');
+    revertBtn.style.display = 'none';
+    showToast('ok','กลับสู่ข้อมูลเริ่มต้นแล้ว','');
+  });
+
+  // initial chip reflects the data baked into the dashboard at build time
+  updateSourceChip('ไฟล์แนบแรก (Rawdata)', DATA.length, dateRangeLabel(DATA));
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', boot);
+} else { boot(); }
+
+})();
+
+/* ============================================================
+   GOOGLE SHEETS LIVE SOURCE
+   Loads Rawdata from the shared Google Sheet on every page open,
+   then rebuilds the dashboard with the same parser used by uploads.
+   ============================================================ */
+(function(){
+"use strict";
+
+const GOOGLE_SHEET_SOURCE = {
+  spreadsheetId: '1rzdFlQujYzNLtatBlc2TXNnAGkbZDgmS4zzToSeF3zg',
+  gid: '750856257',
+  employeeGid: '2031942902',
+  sheetName: 'Rawdata',
+  employeeSheetName: 'Y',
+  label: 'Google Sheets / Rawdata'
+};
+const RAWDATA_HEADERS = [
+  '', 'รอบ', 'รหัส', 'คำนำ', 'ชื่อ', 'สกุล', 'ชื่อเล่น', 'Sec.', 'Dept.',
+  'วันที่ลา', 'พักร้อน', 'ป่วย', 'กิจ', 'กิจ-ไม่ จ.', 'ขาดงาน', 'อื่นๆ',
+  'สาย', 'หยุดเดิม', 'หมายเหตุ', 'หักสาย / ชม.', '3:00', '4'
+];
+
+function sourceUrl(format){
+  if(format === 'csv'){
+    return `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_SOURCE.spreadsheetId}/export?format=csv&gid=${GOOGLE_SHEET_SOURCE.gid}&cachebust=${Date.now()}`;
+  }
+  const base = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_SOURCE.spreadsheetId}/gviz/tq`;
+  const params = new URLSearchParams({
+    gid: GOOGLE_SHEET_SOURCE.gid,
+    headers: '0',
+    cachebust: String(Date.now())
+  });
+  return `${base}?${params.toString()}`;
+}
+
+function employeeCountUrl(){
+  return `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_SOURCE.spreadsheetId}/export?format=csv&gid=${GOOGLE_SHEET_SOURCE.employeeGid}&single=true&cachebust=${Date.now()}`;
+}
+
+function setOverlay(show){
+  const el = document.getElementById('uploadOverlay');
+  if(el) el.classList.toggle('show', !!show);
+}
+
+function setSourceStatus(text){
+  const el = document.getElementById('dataSourceChip');
+  if(el) el.innerHTML = `<div class="chip src">${text}</div>`;
+}
+
+async function loadCsvRows(){
+  const res = await fetch(sourceUrl('csv'), {cache:'no-store'});
+  if(!res.ok) throw new Error(`Google Sheets responded ${res.status}`);
+  const text = await res.text();
+  if(/^\s*</.test(text)) throw new Error('Google Sheets returned HTML instead of CSV');
+  return window.__DATA_IO__.parseCSV(text);
+}
+
+function countUniqueEmployeeCodes(rows2D){
+  const codes = new Set();
+  rows2D.forEach(row => {
+    const raw = row && row[1]; // column B in sheet Y
+    const code = String(raw == null ? '' : raw).replace(/,/g,'').trim();
+    if(/^\d+$/.test(code)) codes.add(code);
+  });
+  return codes.size;
+}
+
+async function loadEmployeeCount(){
+  const res = await fetch(employeeCountUrl(), {cache:'no-store'});
+  if(!res.ok) throw new Error(`Employee sheet responded ${res.status}`);
+  const text = await res.text();
+  if(/^\s*</.test(text)) throw new Error('Employee sheet returned HTML instead of CSV');
+  const rows2D = window.__DATA_IO__.parseCSV(text);
+  const count = countUniqueEmployeeCodes(rows2D);
+  if(!count) throw new Error('ไม่พบรหัสพนักงานตัวเลขในชีต Y คอลัมน์ B');
+  window.__MASTER_EMPLOYEE_COUNT__ = count;
+  if(typeof window.refreshAll === 'function') window.refreshAll();
+  return count;
+}
+
+function tableToRows(table){
+  const rows = (table.rows || []).map(row => (row.c || []).map(cell => {
+    if(!cell) return null;
+    return cell.f != null ? cell.f : cell.v;
+  }));
+  // gviz sometimes promotes or drops header-like numeric columns. Provide
+  // the Rawdata header explicitly so the shared parser can map columns.
+  return [RAWDATA_HEADERS, ...rows];
+}
+
+function loadJsonpRows(){
+  return new Promise((resolve, reject)=>{
+    const cb = `__attendanceSheetCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    let timer;
+    const cleanup = ()=>{
+      clearTimeout(timer);
+      delete window[cb];
+      script.remove();
+    };
+    const params = new URLSearchParams({
+      gid: GOOGLE_SHEET_SOURCE.gid,
+      headers: '0',
+      tqx: `out:json;responseHandler:${cb}`,
+      cachebust: String(Date.now())
+    });
+    window[cb] = response => {
+      cleanup();
+      if(!response || response.status === 'error'){
+        reject(new Error(response && response.errors && response.errors[0] ? response.errors[0].detailed_message : 'Google Sheets JSONP failed'));
+        return;
+      }
+      resolve(tableToRows(response.table || {}));
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Could not load Google Sheets JSONP endpoint'));
+    };
+    timer = setTimeout(()=>{
+      cleanup();
+      reject(new Error('Google Sheets JSONP endpoint timed out'));
+    }, 12000);
+    script.src = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_SOURCE.spreadsheetId}/gviz/tq?${params.toString()}`;
+    document.head.appendChild(script);
+  });
+}
+
+async function loadGoogleSheet(){
+  const io = window.__DATA_IO__;
+  if(!io) return;
+  setOverlay(true);
+  setSourceStatus('กำลังโหลดข้อมูลจาก Google Sheets...');
+  try{
+    try{
+      await loadEmployeeCount();
+    } catch(empErr){
+      io.showToast('err', 'โหลดจำนวนพนักงานจากชีต Y ไม่สำเร็จ', empErr.message || String(empErr));
+    }
+    let rows2D, records;
+    try{
+      rows2D = await loadCsvRows();
+      records = io.parseRows(rows2D);
+    } catch(primaryErr){
+      rows2D = await loadJsonpRows();
+      records = io.parseRows(rows2D);
+    }
+    io.applyRecords(records, GOOGLE_SHEET_SOURCE.label, {
+      showRevert: false,
+      sourceKind: 'ชีต',
+      title: 'โหลดข้อมูลจาก Google Sheets สำเร็จ'
+    });
+  } catch(err){
+    io.showToast('err', 'โหลดข้อมูลจาก Google Sheets ไม่สำเร็จ', err.message || String(err));
+    io.updateSourceChip('ข้อมูลฝังในไฟล์ (สำรอง)', DATA.length, io.dateRangeLabel(DATA));
+  } finally {
+    setOverlay(false);
+  }
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', loadGoogleSheet);
+} else {
+  loadGoogleSheet();
+}
+
+})();
+
+</script>
+<div class="upload-overlay" id="uploadOverlay"><div class="upload-spinner"></div></div>
+</body>
+</html>
