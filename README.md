@@ -20,7 +20,7 @@ Configured access:
 
 | Email | Sec. |
 |---|---|
-| `akkaraphol.c@gmail.com` | `PG` |
+| `akkaraphol.c@gmail.com` | `ALL` |
 | `kaew1475@gmail.com` | `PG` |
 
 ## Important Security Note

@@ -34,7 +34,7 @@ create table if not exists public.user_access (
 
 insert into public.user_access (email, sec)
 values
-  ('akkaraphol.c@gmail.com', 'PG'),
+  ('akkaraphol.c@gmail.com', 'ALL'),
   ('kaew1475@gmail.com', 'PG')
 on conflict (email, sec) do nothing;
 

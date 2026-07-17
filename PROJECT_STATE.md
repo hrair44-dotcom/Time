@@ -40,7 +40,7 @@ Configured in `public.user_access`:
 
 | Email | Sec. |
 |---|---|
-| `akkaraphol.c@gmail.com` | `PG` |
+| `akkaraphol.c@gmail.com` | `ALL` |
 | `kaew1475@gmail.com` | `PG` |
 
 RLS policies allow authenticated users to read rows only when their email has access to the row's `sec`.

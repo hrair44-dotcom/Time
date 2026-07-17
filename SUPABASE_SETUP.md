@@ -6,7 +6,7 @@
 
 | email | Sec. |
 |---|---|
-| akkaraphol.c@gmail.com | PG |
+| akkaraphol.c@gmail.com | ALL |
 | kaew1475@gmail.com | PG |
 
 ## 1. สร้าง Supabase project
